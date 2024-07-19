@@ -1,0 +1,2 @@
+[console_scripts]
+myapi-admin = myapi_admin:myapi_admin
