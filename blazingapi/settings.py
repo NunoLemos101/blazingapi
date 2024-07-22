@@ -18,7 +18,11 @@ class Settings:
                     value = getattr(module, key)
                     setattr(self, key, value)
         except ModuleNotFoundError as e:
-            raise ImportError(f"Settings module '{settings_module}' not found") from e
+            module = importlib.import_module('blazingapi.default_settings')
+            for key in dir(module):
+                if key.isupper():
+                    value = getattr(module, key)
+                    setattr(self, key, value)
 
 
 settings = Settings()

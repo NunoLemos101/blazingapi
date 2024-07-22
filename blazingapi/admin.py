@@ -16,24 +16,24 @@ def startproject(project_name):
     # Define the project structure with boilerplate content
     files = {
         'main.py': '''\
-from framework.server import run
+from blazingapi.server import run
 
 run()
         ''',
         'settings.py': '''\
 VIEW_FILES = [
-    "framework.auth.views",
+    "blazingapi.auth.views",
     "views",
 ]
 
 MODEL_FILES = [
-    "framework.auth.models",
+    "blazingapi.auth.models",
     "models"
 ]
 
 MIDDLEWARE_CLASSES = [
-    "framework.security.middleware.XFrameOptionsMiddleware",
-    "framework.auth.middleware.BearerAuthenticationMiddleware",
+    "blazingapi.security.middleware.XFrameOptionsMiddleware",
+    "blazingapi.auth.middleware.BearerAuthenticationMiddleware",
 ]
 
 DB_FILE = "db.sqlite3"
@@ -44,7 +44,7 @@ ME_ENDPOINT = "/api/auth/me"
 
 X_FRAME_OPTIONS = "DENY"
 ''',
-        'views.py': '# Define your view functions here\n\nfrom framework.app import app\nfrom framework.response import Response\n\n\n@app.get("/index")\ndef index(request):\n    return Response(body={"message": "Hello, world!"})\n',
+        'views.py': '# Define your view functions here\n\nfrom blazingapi.app import app\nfrom blazingapi.response import Response\n\n\n@app.get("/index")\ndef index(request):\n    return Response(body={"message": "Hello, world!"})\n',
         'models.py': '# Define your data models here\n',
         'db.sqlite3': ''
     }
