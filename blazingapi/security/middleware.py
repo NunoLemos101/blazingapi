@@ -1,5 +1,5 @@
-from framework.middleware import BaseMiddleware
-from framework.settings import settings
+from blazingapi.middleware import BaseMiddleware
+from blazingapi.settings import settings
 
 
 class XFrameOptionsMiddleware(BaseMiddleware):

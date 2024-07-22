@@ -1,3 +1,3 @@
-from framework.router import Router
+from blazingapi.router import Router
 
 app = Router()

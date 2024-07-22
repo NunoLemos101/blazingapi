@@ -1,9 +1,5 @@
-import sqlite3
-import threading
-
-from framework.orm.fields import Field, PrimaryKeyField
-from framework.orm.manager import Manager, ConnectionPool
-
+from blazingapi.orm.fields import Field, PrimaryKeyField
+from blazingapi.orm.manager import Manager, ConnectionPool
 
 
 class ModelMeta(type):

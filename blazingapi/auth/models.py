@@ -2,8 +2,8 @@ import secrets
 
 import bcrypt
 
-from framework.orm.fields import VarCharField
-from framework.orm.models import Model
+from blazingapi.orm.fields import VarCharField
+from blazingapi.orm.models import Model
 
 
 class User(Model):

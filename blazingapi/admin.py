@@ -4,12 +4,12 @@ import click
 
 
 @click.group()
-def framework_admin():
+def blazingapi_admin():
     """Command line utility for managing MyAPI."""
     pass
 
 
-@framework_admin.command()
+@blazingapi_admin.command()
 @click.argument('project_name')
 def startproject(project_name):
     """Create a new project with the specified name."""
@@ -60,6 +60,5 @@ X_FRAME_OPTIONS = "DENY"
     click.echo(f"Project '{project_name}' created successfully.")
 
 
-
 if __name__ == '__main__':
-    framework_admin()
+    blazingapi_admin()

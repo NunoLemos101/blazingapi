@@ -1,7 +1,7 @@
 import sqlite3
 import threading
 
-from framework.settings import settings
+from blazingapi.settings import settings
 
 
 class ConnectionPool:

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='framework',
+    name='blazingapi',
     author='Nuno Lemos',
     author_email='nunolemos6zw5@gmail.com',
     description='A growing framework for building web applications.',
@@ -14,7 +14,6 @@ setup(
         'bcrypt',
         'click',
         'gunicorn',
-
     ],
     entry_points={
         'console_scripts': [

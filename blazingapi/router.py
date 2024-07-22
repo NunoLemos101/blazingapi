@@ -1,7 +1,7 @@
 import re
 
-from framework.middleware import MiddlewareManager
-from framework.request import Request
+from blazingapi.middleware import MiddlewareManager
+from blazingapi.request import Request
 
 
 class Router:

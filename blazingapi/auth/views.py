@@ -1,7 +1,7 @@
-from framework.app import app
-from framework.auth.models import User
-from framework.response import Response
-from framework.settings import settings
+from blazingapi.app import app
+from blazingapi.auth.models import User
+from blazingapi.response import Response
+from blazingapi.settings import settings
 
 
 @app.post(settings.LOGIN_ENDPOINT)

@@ -1,5 +1,5 @@
-from framework.auth.models import User, AnonymousUser
-from framework.middleware import BaseMiddleware
+from blazingapi.auth.models import User, AnonymousUser
+from blazingapi.middleware import BaseMiddleware
 
 
 class BearerAuthenticationMiddleware(BaseMiddleware):

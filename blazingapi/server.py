@@ -3,9 +3,9 @@ import inspect
 
 from gunicorn.app.base import BaseApplication
 
-from framework.app import app
-from framework.orm.models import Model
-from framework.settings import settings
+from blazingapi.app import app
+from blazingapi.orm.models import Model
+from blazingapi.settings import settings
 
 
 class StandaloneApplication(BaseApplication):

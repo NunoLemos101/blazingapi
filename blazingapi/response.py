@@ -3,7 +3,7 @@ import json
 from enum import Enum
 from typing import Dict, Union, Any, List
 
-from framework.orm.models import Model
+from blazingapi.orm.models import Model
 
 
 class ResponseType(Enum):
