@@ -3,11 +3,12 @@ import inspect
 import platform
 from wsgiref.simple_server import make_server
 
-from gunicorn.app.base import BaseApplication
-
 from blazingapi.app import app
 from blazingapi.orm.models import Model
 from blazingapi.settings import settings
+
+if platform.system().lower() != 'windows':
+    from gunicorn.app.base import BaseApplication
 
 
 class StandaloneApplication(BaseApplication):

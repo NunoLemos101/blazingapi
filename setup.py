@@ -7,7 +7,7 @@ setup(
     description='A growing framework for building web applications.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    version='0.0.3',
+    version='0.0.7',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
@@ -17,7 +17,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'framework-admin=admin:framework_admin',
+            'blazingapi-admin=blazingapi.admin:blazingapi_admin',
         ],
     },
 )
