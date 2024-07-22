@@ -1,5 +1,7 @@
 import importlib
 import inspect
+import platform
+from wsgiref.simple_server import make_server
 
 from gunicorn.app.base import BaseApplication
 
@@ -52,6 +54,11 @@ def run(port: int = 8000):
     import_view_modules()
     create_all_tables()
     add_middlewares()
+
+    if platform.system().lower() == 'windows':
+        with make_server('0.0.0.0', 8000) as httpd:
+            print('Serving on port 8000...')
+            httpd.serve_forever()
 
     options = {
         'bind': '%s:%s' % ('0.0.0.0', port),
