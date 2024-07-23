@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from framework.response import Response, ResponseType
+from blazingapi.response import Response, ResponseType
 
 
 class TestResponse(unittest.TestCase):

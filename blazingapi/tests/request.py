@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from framework.request import Request
+from blazingapi.request import Request
 
 
 class TestRequest(unittest.TestCase):
