@@ -20,13 +20,10 @@ class CorsMiddleware(BaseMiddleware):
 
         origin = request.headers.get("Origin", "*")
 
-        if "*" not in settings.CORS_ALLOWED_ORIGINS and origin not in settings.CORS_ALLOWED_ORIGINS:
-            response.headers['Access-Control-Allow-Origin'] = "null"
-        else:
-            response.headers['Access-Control-Allow-Origin'] = ",".join(settings.CORS_ALLOWED_ORIGINS)
-
-        response.headers['Access-Control-Allow-Methods'] = ",".join(settings.CORS_ALLOWED_METHODS)
-        response.headers['Access-Control-Allow-Headers'] = ",".join(settings.CORS_ALLOWED_HEADERS)
+        if "*" in settings.CORS_ALLOWED_ORIGINS or origin in settings.CORS_ALLOWED_ORIGINS:
+            response.headers['Access-Control-Allow-Origin'] = origin if "*" not in settings.CORS_ALLOWED_ORIGINS else "*"
+            response.headers['Access-Control-Allow-Methods'] = ",".join(settings.CORS_ALLOWED_METHODS)
+            response.headers['Access-Control-Allow-Headers'] = ",".join(settings.CORS_ALLOWED_HEADERS)
 
         if request.method == "OPTIONS":
             response.status = 204
