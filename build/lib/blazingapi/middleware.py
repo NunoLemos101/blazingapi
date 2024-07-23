@@ -31,4 +31,3 @@ class BaseMiddleware:
         This function is called in reverse order of the middleware stack and can be used
         to modify the response before being returned to the user.
         """
-
