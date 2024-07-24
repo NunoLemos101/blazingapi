@@ -46,8 +46,8 @@ class PrimaryKeyField(Field):
 
 class ForeignKeyField(Field):
 
-    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, nullable=False, unique=False):
-        super().__init__(f'INTEGER', nullable, unique)  # Assuming the reference is always an Integer ID for simplicity
+    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, nullable=False):
+        super().__init__(f'INTEGER', nullable, False)  # Assuming the reference is always an Integer ID for simplicity
         self.reference_model = reference_model
         self.on_delete = on_delete
         self.on_update = on_update
