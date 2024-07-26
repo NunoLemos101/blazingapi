@@ -17,11 +17,14 @@ def import_view_modules():
 
 
 def create_all_tables():
+    created_tables = []
     for module_name in settings.MODEL_FILES:
         module = importlib.import_module(module_name)
         for name, obj in inspect.getmembers(module):
-            if inspect.isclass(obj) and issubclass(obj, Model) and obj is not Model:
+            if inspect.isclass(obj) and issubclass(obj, Model) and obj is not Model and obj not in created_tables:
+                created_tables.append(obj)
                 obj.create_table()
+
 
 
 def add_middlewares():

@@ -53,13 +53,13 @@ class ForeignKeyField(Field):
         self.on_update = on_update
 
     def render_sql(self, name):
-        base_sql = super().render_sql(name)
+        return super().render_sql(name)
 
+    def render_foreign_key_sql(self, name):
         if self.reference_model is str:
             reference_table = self.reference_model
         else:
             reference_table = self.reference_model._table
 
         reference_field = 'id'  # Assuming the reference field is always 'id'
-        fk_constraint = f', FOREIGN KEY("{name}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {self.on_delete.value} ON UPDATE {self.on_update.value}'
-        return base_sql + fk_constraint
+        return f'FOREIGN KEY("{name}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {self.on_delete.value} ON UPDATE {self.on_update.value}'

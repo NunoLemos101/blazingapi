@@ -1,4 +1,4 @@
-from blazingapi.orm.fields import Field, PrimaryKeyField
+from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
 from blazingapi.orm.manager import Manager, ConnectionPool
 
 
@@ -39,7 +39,12 @@ class Model(metaclass=ModelMeta):
     def create_table(cls):
         connection = ConnectionPool.get_connection()
         fields = [field.render_sql(name) for name, field in cls._fields.items()]
+        foreign_keys = [field.render_foreign_key_sql(name) for name, field in cls._fields.items() if isinstance(field, ForeignKeyField)]
+
         fields_str = ', '.join(fields)
+        if foreign_keys:
+            fields_str += ', ' + ', '.join(foreign_keys)
+
         connection.execute(f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})')
         print("Table created if not exists: ", cls._table)
 
