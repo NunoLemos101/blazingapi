@@ -45,25 +45,6 @@ class Manager:
 
         return instances
 
-    def filter(self, **kwargs):
-        connection = ConnectionPool.get_connection()
-        fields = [f'"{key}"=?' for key in kwargs.keys()]
-        cursor = connection.execute(
-            f'SELECT * FROM {self.model._table} WHERE {" AND ".join(fields)}',
-            list(kwargs.values())
-        )
-        rows = cursor.fetchall()
-        instances = []
-
-        columns = [col[0] for col in cursor.description]
-
-        for row in rows:
-            row_dict = dict(zip(columns, row))
-            instance = self.model(**row_dict)
-            instances.append(instance)
-
-        return instances
-
     def get(self, **kwargs):
         connection = ConnectionPool.get_connection()
         fields = [f'{key}=?' for key in kwargs.keys()]
