@@ -70,7 +70,7 @@ class Model(metaclass=ModelMeta):
 
     def delete(self):
         connection = ConnectionPool.get_connection()
-        cursor = self._get_connection().execute(
+        cursor = connection.execute(
             f'DELETE FROM {self._table} WHERE id=?',
             (self.id, )
         )
