@@ -47,11 +47,24 @@ class Manager:
 
     def filter(self, **kwargs):
         connection = ConnectionPool.get_connection()
-        fields = [f'"{key}"=?' for key in kwargs.keys()]
-        cursor = connection.execute(
-            f'SELECT * FROM {self.model._table} WHERE {" AND ".join(fields)}',
-            list(kwargs.values())
-        )
+
+        fields = []
+        values = []
+
+        for key, value in kwargs.items():
+            if key.endswith("__in"):
+                field = key[:-4]
+                if not isinstance(value, (list, tuple)):
+                    raise ValueError(f"Expected a list or tuple for {field}__in filter, got {type(value).__name__}")
+                placeholders = ', '.join(['?' for _ in value])
+                fields.append(f'"{field}" IN ({placeholders})')
+                values.extend(value)
+            else:
+                fields.append(f'"{key}" = ?')
+                values.append(value)
+
+        query = f'SELECT * FROM {self.model._table} WHERE {" AND ".join(fields)}'
+        cursor = connection.execute(query, values)
         rows = cursor.fetchall()
         instances = []
 
