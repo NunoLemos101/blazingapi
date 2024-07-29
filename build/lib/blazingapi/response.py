@@ -4,7 +4,6 @@ from enum import Enum
 from typing import Dict, Union, Any, List
 
 from blazingapi.orm.models import Model
-from blazingapi.orm.query import QuerySet
 
 
 class ResponseType(Enum):
@@ -22,9 +21,7 @@ class Response:
 
     def to_http_response(self) -> Dict[str, Union[str, int, Dict[str, str]]]:
         if self.content_type == ResponseType.JSON:
-            if isinstance(self.body, QuerySet):
-                body_content = [model.serialize() for model in self.body.execute()]
-            elif isinstance(self.body, List) and all(isinstance(item, Model) for item in self.body):
+            if isinstance(self.body, List) and all(isinstance(item, Model) for item in self.body):
                 body_content = [model.serialize() for model in self.body]
             elif isinstance(self.body, Model):
                 body_content = self.body.serialize()
