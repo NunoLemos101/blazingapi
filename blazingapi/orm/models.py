@@ -1,5 +1,6 @@
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
-from blazingapi.orm.manager import Manager, ConnectionPool
+from blazingapi.orm.manager import Manager
+from blazingapi.orm.query import ConnectionPool
 
 
 class ModelMeta(type):
