@@ -1,6 +1,7 @@
 import sqlite3
 import threading
 
+from blazingapi.orm.query import Q
 from blazingapi.settings import settings
 
 
@@ -45,37 +46,16 @@ class Manager:
 
         return instances
 
-    def filter(self, **kwargs):
-        connection = ConnectionPool.get_connection()
+    def filter(self, *args, **kwargs):
+        if kwargs:
+            q = Q(**kwargs)
+            return self._exec_query(q)
 
-        fields = []
-        values = []
-
-        for key, value in kwargs.items():
-            if key.endswith("__in"):
-                field = key[:-4]
-                if not isinstance(value, (list, tuple)):
-                    raise ValueError(f"Expected a list or tuple for {field}__in filter, got {type(value).__name__}")
-                placeholders = ', '.join(['?' for _ in value])
-                fields.append(f'"{field}" IN ({placeholders})')
-                values.extend(value)
-            else:
-                fields.append(f'"{key}" = ?')
-                values.append(value)
-
-        query = f'SELECT * FROM {self.model._table} WHERE {" AND ".join(fields)}'
-        cursor = connection.execute(query, values)
-        rows = cursor.fetchall()
-        instances = []
-
-        columns = [col[0] for col in cursor.description]
-
-        for row in rows:
-            row_dict = dict(zip(columns, row))
-            instance = self.model(**row_dict)
-            instances.append(instance)
-
-        return instances
+        if args:
+            arg_query = args[0]
+            if not isinstance(arg_query, Q):
+                raise ValueError(f"Expected Q object, got {type(arg_query).__name__}")
+            return self._exec_query(arg_query)
 
     def get(self, **kwargs):
         connection = ConnectionPool.get_connection()
@@ -88,3 +68,13 @@ class Manager:
         if row is None:
             return None
         return self.model(**dict(zip([col[0] for col in cursor.description], row)))
+
+    def _exec_query(self, q_obj):
+        where_clause, values = q_obj.get_sql()
+        query = f'SELECT * FROM {self.model._table} WHERE {where_clause}'
+        connection = ConnectionPool.get_connection()
+        cursor = connection.execute(query, values)
+        rows = cursor.fetchall()
+        columns = [col[0] for col in cursor.description]
+        instances = [self.model(**dict(zip(columns, row))) for row in rows]
+        return instances
