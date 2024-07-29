@@ -54,7 +54,9 @@ class Model(metaclass=ModelMeta):
 
         fields = []
         values = []
-        for field, value in self._fields.items():
+
+        for field in self._fields:
+            value = getattr(self, field)
             fields.append(field)
             if isinstance(value, Model):
                 values.append(getattr(value, "id"))
@@ -64,7 +66,9 @@ class Model(metaclass=ModelMeta):
         field_str = ', '.join(fields)
         placeholder_str = ', '.join(['?'] * len(fields))
 
-        cursor = connection.execute(f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})', values)
+        sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
+
+        cursor = connection.execute(sql_statement, values)
 
         self.id = cursor.lastrowid
         connection.commit()
@@ -88,7 +92,16 @@ class Model(metaclass=ModelMeta):
 
     def serialize(self):
 
-        if self.serializable_fields == '__all__':
-            return {field: getattr(self, field) for field in self._fields.keys()}
+        result = {}
 
-        return {field: getattr(self, field) for field in self.serializable_fields}
+        serializable_fields = self._fields if self.serializable_fields == '__all__' else self.serializable_fields
+
+        for field in serializable_fields:
+            value = getattr(self, field)
+            if isinstance(value, Model):
+                result[field] = value.serialize()
+            else:
+                result[field] = value
+
+        return result
+
