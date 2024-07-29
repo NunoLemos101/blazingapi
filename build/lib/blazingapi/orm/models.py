@@ -59,8 +59,6 @@ class Model(metaclass=ModelMeta):
             value = getattr(self, field)
             fields.append(field)
             if isinstance(value, Model):
-                if value.id is None:
-                    value.save()
                 values.append(getattr(value, "id"))
             else:
                 values.append(getattr(self, field))
