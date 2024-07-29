@@ -1,0 +1,2 @@
+[console_scripts]
+blazingapi-admin = blazingapi.admin:blazingapi_admin

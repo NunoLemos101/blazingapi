@@ -51,21 +51,12 @@ class Model(metaclass=ModelMeta):
 
     def save(self):
         connection = ConnectionPool.get_connection()
-
-        fields = []
-        values = []
-        for field, value in self._fields.items():
-            fields.append(field)
-            if isinstance(value, Model):
-                values.append(getattr(value, "id"))
-            else:
-                values.append(getattr(self, field))
-
-        field_str = ', '.join(fields)
-        placeholder_str = ', '.join(['?'] * len(fields))
-
-        cursor = connection.execute(f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})', values)
-
+        fields = ', '.join(self._fields.keys())
+        values = ', '.join(['?'] * len(self._fields))
+        cursor = connection.execute(
+            f'INSERT INTO {self._table} ({fields}) VALUES ({values})',
+            [getattr(self, field) for field in self._fields.keys()]
+        )
         self.id = cursor.lastrowid
         connection.commit()
 
