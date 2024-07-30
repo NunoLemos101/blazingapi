@@ -61,5 +61,8 @@ class ForeignKeyField(Field):
         else:
             reference_table = self.reference_model._table
 
-        reference_field = 'id'  # Assuming the reference field is always 'id'
+        reference_field = 'id'
         return f'FOREIGN KEY("{name}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {self.on_delete.value} ON UPDATE {self.on_update.value}'
+
+    def __get__(self, instance, owner):
+        return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.reference_model._table}_id"))

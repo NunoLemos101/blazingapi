@@ -45,11 +45,10 @@ class Model(metaclass=ModelMeta):
         for field_name in self._fields:
             value = kwargs.get(field_name)
             if field_name in self._foreign_keys:
-                # value here can be either a model or an id
                 if isinstance(value, Model):
                     setattr(self, field_name, value)
                 else:
-                    setattr(self, field_name, self._foreign_keys[field_name].reference_model.manager.get(id=value))
+                    setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
 
@@ -86,7 +85,6 @@ class Model(metaclass=ModelMeta):
         placeholder_str = ', '.join(['?'] * len(fields))
 
         sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
-
         cursor = connection.execute(sql_statement, values)
 
         self.id = cursor.lastrowid
