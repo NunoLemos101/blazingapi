@@ -20,6 +20,8 @@ class Manager:
     def get_foreign_key_reference_with_cache(self, fk):
         """
         Should be used only internally to retrieve a model instance from a foreign key reference.
+
+        This prevents multiple queries for the same foreign key reference.
         """
         if fk in self.cache:
             return self.cache[fk]

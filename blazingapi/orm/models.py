@@ -93,9 +93,12 @@ class Model(metaclass=ModelMeta):
     def update(self, **kwargs):
         connection = ConnectionPool.get_connection()
         fields = ', '.join([f'{key}=?' for key in kwargs.keys()])
-        cursor = self._get_connection().execute(
-            f'UPDATE {self._table} SET {fields} WHERE id=?',
-            list(kwargs.values()) + [self.id]
+        sql_statement = f'UPDATE {self._table} SET {fields} WHERE id=?'
+        values = list(kwargs.values()) + [self.id]
+        print(values)
+        cursor = connection.execute(
+            sql_statement,
+            values
         )
         connection.commit()
 

@@ -26,7 +26,6 @@ def create_all_tables():
                 obj.create_table()
 
 
-
 def add_middlewares():
     for middleware_path in settings.MIDDLEWARE_CLASSES:
         module_path, class_name = middleware_path.rsplit('.', 1)

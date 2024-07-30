@@ -150,7 +150,6 @@ class QuerySet:
 
             if self._offset is not None:
                 query += f' OFFSET {self._offset}'
-            print(query)
             cursor = connection.execute(query, values)
             rows = cursor.fetchall()
             columns = [col[0] for col in cursor.description]
@@ -181,3 +180,7 @@ class QuerySet:
     def __iter__(self):
         self._exec_query()
         return iter(self.cache)
+
+    def __len__(self):
+        self._exec_query()
+        return len(self.cache)
