@@ -5,13 +5,21 @@ from blazingapi.orm.query import ConnectionPool
 
 class ModelMeta(type):
     def __new__(cls, name, bases, attrs):
-        fields = {key: attrs.pop(key) for key, value in list(attrs.items()) if isinstance(value, Field)}
+        fields = {}
+        foreign_keys = {}
+
+        for key, value in attrs.items():
+            if isinstance(value, Field):
+                fields[key] = value
+            if isinstance(value, ForeignKeyField):
+                foreign_keys[key] = value
 
         for base in bases:
             if hasattr(base, '_fields'):
                 fields.update(base._fields)
 
         attrs['_fields'] = fields
+        attrs['_foreign_keys'] = foreign_keys
 
         if '_table' not in attrs:
             attrs['_table'] = name.lower()
@@ -26,6 +34,7 @@ class Model(metaclass=ModelMeta):
     _table = None
     serializable_fields = '__all__'
     id = PrimaryKeyField()
+    cache = {}
 
     def __init__(self, **kwargs):
 
@@ -34,7 +43,15 @@ class Model(metaclass=ModelMeta):
                 raise AttributeError(f"Invalid field '{field_name}' for model '{self.__class__.__name__}'")
 
         for field_name in self._fields:
-            setattr(self, field_name, kwargs.get(field_name))
+            value = kwargs.get(field_name)
+            if field_name in self._foreign_keys:
+                # value here can be either a model or an id
+                if isinstance(value, Model):
+                    setattr(self, field_name, value)
+                else:
+                    setattr(self, field_name, self._foreign_keys[field_name].reference_model.manager.get(id=value))
+            else:
+                setattr(self, field_name, value)
 
     @classmethod
     def create_table(cls):
@@ -106,4 +123,3 @@ class Model(metaclass=ModelMeta):
                 result[field] = value
 
         return result
-
