@@ -91,23 +91,30 @@ class Model(metaclass=ModelMeta):
         connection.commit()
 
     def update(self, **kwargs):
+
+        fields = []
+
+        # Validate fields
+        for key in kwargs.keys():
+            if key not in self._fields:
+                raise AttributeError(f"Invalid field '{key}' for model '{self.__class__.__name__}'")
+            fields.append(f'{key}=?')
+
         connection = ConnectionPool.get_connection()
-        fields = ', '.join([f'{key}=?' for key in kwargs.keys()])
-        sql_statement = f'UPDATE {self._table} SET {fields} WHERE id=?'
+        sql_statement = f'UPDATE {self._table} SET {", ".join(fields)} WHERE id=?'
         values = list(kwargs.values()) + [self.id]
-        print(values)
-        cursor = connection.execute(
-            sql_statement,
-            values
-        )
+
+        connection.execute(sql_statement, values)
+
         connection.commit()
+
+        # Update local attributes
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def delete(self):
         connection = ConnectionPool.get_connection()
-        cursor = connection.execute(
-            f'DELETE FROM {self._table} WHERE id=?',
-            (self.id, )
-        )
+        connection.execute(f'DELETE FROM {self._table} WHERE id=?', [self.id])
         connection.commit()
 
     def serialize(self):
