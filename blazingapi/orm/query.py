@@ -178,9 +178,15 @@ class QuerySet:
         raise TypeError("Invalid argument type.")
 
     def __iter__(self):
+        """
+        Evaluates the query and returns an iterator over the results.
+        """
         self._exec_query()
         return iter(self.cache)
 
     def __len__(self):
+        """
+        Evaluates the query and returns the number of results
+        """
         self._exec_query()
         return len(self.cache)

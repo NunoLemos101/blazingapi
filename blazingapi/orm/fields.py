@@ -11,31 +11,36 @@ class ForeignKeyAction(Enum):
 
 class Field:
 
-    def __init__(self, field_type, nullable=False, unique=False):
+    def __init__(self, field_type, nullable=False, unique=False, validators=None):
         self.field_type = field_type
         self.nullable = nullable
         self.unique = unique
+        self.validators = [] if validators is None else validators
 
     def render_sql(self, name):
         null_constraint = "" if self.nullable else " NOT NULL"
         unique_constraint = " UNIQUE" if self.unique else ""
         return f'"{name}" {self.field_type}{null_constraint}{unique_constraint}'
 
+    def validate(self, value):
+        for validator in self.validators:
+            validator(value)
+
 
 class IntegerField(Field):
 
-    def __init__(self, nullable=False, unique=False):
-        super().__init__("INTEGER", nullable, unique)
+    def __init__(self, nullable=False, unique=False, validators=None):
+        super().__init__("INTEGER", nullable, unique, validators)
 
 
 class TextField(Field):
-    def __init__(self, nullable=False, unique=False):
-        super().__init__('TEXT', nullable, unique)
+    def __init__(self, nullable=False, unique=False, validators=None):
+        super().__init__('TEXT', nullable, unique, validators)
 
 
 class VarCharField(Field):
-    def __init__(self, max_length, nullable=False, unique=False):
-        super().__init__(f'VARCHAR({max_length})', nullable, unique)
+    def __init__(self, max_length, nullable=False, unique=False, validators=None):
+        super().__init__(f'VARCHAR({max_length})', nullable, unique, validators)
         self.max_length = max_length
 
 
@@ -46,8 +51,8 @@ class PrimaryKeyField(Field):
 
 class ForeignKeyField(Field):
 
-    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, nullable=False):
-        super().__init__(f'INTEGER', nullable, False)  # Assuming the reference is always an Integer ID for simplicity
+    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, nullable=False, validators=None):
+        super().__init__(f'INTEGER', nullable, False, validators)  # Assuming the reference is always an Integer ID for simplicity
         self.reference_model = reference_model
         self.on_delete = on_delete
         self.on_update = on_update

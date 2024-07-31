@@ -30,7 +30,12 @@ class ModelMeta(type):
 
 
 class Model(metaclass=ModelMeta):
-
+    """
+    Base class for all models. Provides basic functionality
+    for creating, updating, deleting and serializing models.
+    """
+    _fields = {}
+    _foreign_keys = {}
     _table = None
     serializable_fields = '__all__'
     id = PrimaryKeyField()
@@ -48,6 +53,7 @@ class Model(metaclass=ModelMeta):
                 if isinstance(value, Model):
                     setattr(self, field_name, value)
                 else:
+                    # This allows for lazy loading in the ForeignKeyField.__get__ method
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
@@ -73,6 +79,9 @@ class Model(metaclass=ModelMeta):
 
         for field in self._fields:
             value = getattr(self, field)
+
+            self._fields[field].validate(value)
+
             fields.append(field)
             if isinstance(value, Model):
                 if value.id is None:
@@ -98,6 +107,9 @@ class Model(metaclass=ModelMeta):
         for key in kwargs.keys():
             if key not in self._fields:
                 raise AttributeError(f"Invalid field '{key}' for model '{self.__class__.__name__}'")
+
+            self._fields[key].validate(kwargs[key])
+
             fields.append(f'{key}=?')
 
         connection = ConnectionPool.get_connection()
