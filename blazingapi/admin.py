@@ -5,7 +5,9 @@ import click
 
 @click.group()
 def blazingapi_admin():
-    """Command line utility for managing MyAPI."""
+    """
+    Command line utility for managing BlazingAPI.
+    """
     pass
 
 

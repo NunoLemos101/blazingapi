@@ -62,6 +62,5 @@ class AnonymousUser(User):
     def delete(self):
         pass  # Anonymous user cannot be deleted
 
-
     def serialize(self):
         return None

@@ -1,4 +1,3 @@
-
 VIEW_FILES = [
     "blazingapi.auth.views",
     "views",
@@ -10,6 +9,7 @@ MODEL_FILES = [
 ]
 
 MIDDLEWARE_CLASSES = [
+    "blazingapi.security.middleware.CorsMiddleware",
     "blazingapi.security.middleware.XFrameOptionsMiddleware",
     "blazingapi.auth.middleware.BearerAuthenticationMiddleware",
 ]
@@ -21,3 +21,7 @@ REGISTER_ENDPOINT = "/api/auth/register"
 ME_ENDPOINT = "/api/auth/me"
 
 X_FRAME_OPTIONS = "DENY"
+
+CORS_ALLOWED_ORIGINS = ["*"]
+CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+CORS_ALLOWED_HEADERS = ["Content-Type", "Authorization"]
