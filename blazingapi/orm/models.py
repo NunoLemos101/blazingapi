@@ -49,6 +49,13 @@ class Model(metaclass=ModelMeta):
 
         for field_name in self._fields:
             value = kwargs.get(field_name)
+            field = self._fields[field_name]
+            if value is None and field.default is not None:
+                if callable(field.default):
+                    value = field.default(**kwargs)
+                else:
+                    value = field.default
+
             if field_name in self._foreign_keys:
                 if isinstance(value, Model):
                     setattr(self, field_name, value)
@@ -85,12 +92,10 @@ class Model(metaclass=ModelMeta):
             field = self._fields[field_name]
 
             if value is None and field.default is not None:
-                if callable(field.default):
-                    value = field.default()
-                else:
-                    # If the default value is not a callable function
-                    # Let the database fill in the default value
-                    continue
+                # Let the database fill in the default value
+                # If some default value is a callable function
+                # it was already called in the __init__ method
+                continue
 
             field.validate(value)
 
