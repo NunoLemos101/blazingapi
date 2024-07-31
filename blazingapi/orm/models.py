@@ -1,7 +1,7 @@
 import inspect
 
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
-from blazingapi.orm.manager import Manager
+from blazingapi.orm.manager import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
 
 
@@ -74,6 +74,11 @@ class Model(metaclass=ModelMeta):
             if field_name in self._foreign_keys:
                 if isinstance(value, Model):
                     setattr(self, field_name, value)
+                    foreign_key = self._foreign_keys[field_name]
+                    related_name = foreign_key.related_name
+                    if foreign_key.related_name is None:
+                        related_name = f'{self._table}_set'
+                    setattr(value, related_name, RelatedModelManager(self.__class__, value))
                 else:
                     # This allows for lazy loading in the ForeignKeyField.__get__ method
                     setattr(self, f"_{field_name}_id", value)
