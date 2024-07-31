@@ -18,7 +18,6 @@ class Manager:
         return QuerySet(self.model).filter(*args, **kwargs).get()
 
     def get_foreign_key_reference_with_cache(self, fk):
-        print(fk)
         """
         Should be used only internally to retrieve a model instance from a foreign key reference.
 
