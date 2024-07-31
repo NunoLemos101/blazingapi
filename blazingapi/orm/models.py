@@ -1,7 +1,19 @@
+import inspect
+
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
 from blazingapi.orm.manager import Manager
 from blazingapi.orm.query import ConnectionPool
 
+
+def accepts_kwargs(func):
+    # Get the signature of the callable
+    sig = inspect.signature(func)
+
+    # Check if any parameter is of kind VAR_KEYWORD
+    for param in sig.parameters.values():
+        if param.kind == inspect.Parameter.VAR_KEYWORD:
+            return True
+    return False
 
 class ModelMeta(type):
     def __new__(cls, name, bases, attrs):
@@ -52,7 +64,10 @@ class Model(metaclass=ModelMeta):
             field = self._fields[field_name]
             if value is None and field.default is not None:
                 if callable(field.default):
-                    value = field.default(**kwargs)
+                    if accepts_kwargs(field.default):
+                        value = field.default(**kwargs)
+                    else:
+                        value = field.default()
                 else:
                     value = field.default
 
@@ -92,9 +107,9 @@ class Model(metaclass=ModelMeta):
             field = self._fields[field_name]
 
             if value is None and field.default is not None:
-                # Let the database fill in the default value
-                # If some default value is a callable function
-                # it was already called in the __init__ method
+                # The default values are all defined at __init__ method.
+                # This condition is only met if the user explicitly sets some value to None
+                # after the default value is generated at __init__.
                 continue
 
             field.validate(value)

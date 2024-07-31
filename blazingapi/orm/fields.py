@@ -1,7 +1,8 @@
 from enum import Enum
 
+from blazingapi.orm.manager import Manager
 from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, \
-    PositiveNumberValidator, NegativeNumberValidator
+    PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
 
 
 class ForeignKeyAction(Enum):
@@ -94,11 +95,12 @@ class ForeignKeyField(Field):
     """
     A field that references another model.
     """
-    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, default=None, nullable=True, validators=None):
+    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, related_name=None, default=None, nullable=True, validators=None):
         super().__init__(f'INTEGER', default=default, nullable=nullable, validators=validators)  # Assuming the reference is always an Integer ID for simplicity
         self.reference_model = reference_model
         self.on_delete = on_delete
         self.on_update = on_update
+        self.related_name = related_name
 
     def render_sql(self, name):
         return super().render_sql(name)
@@ -194,3 +196,13 @@ class NonNegativeFloatField(Field):
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
         super().__init__("REAL", default, nullable, unique, choices, validators)
         self.validators.append(MinValueValidator(0))
+
+
+class DateTimeField(Field):
+    """
+    A field that stores date and time values.
+    """
+
+    def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
+        super().__init__("DATETIME", default, nullable, unique, choices, validators)
+        self.validators.append(DateTimeValidator())

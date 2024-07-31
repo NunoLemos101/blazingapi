@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 
 class BaseValidator:
@@ -92,3 +93,13 @@ class NegativeNumberValidator(BaseValidator):
     def __call__(self, value):
         if value is not None and value >= 0:
             raise ValueError(f"Value {value} must be a negative number")
+
+
+class DateTimeValidator(BaseValidator):
+    """
+    Validator for date and time values. Raises a `ValueError` if the value is not a valid date and time.
+    """
+
+    def __call__(self, value):
+        if value is not None and not isinstance(value, datetime):
+            raise ValueError(f"Value {value} is not a valid date and time")
