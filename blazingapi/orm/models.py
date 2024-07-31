@@ -68,8 +68,10 @@ class Model(metaclass=ModelMeta):
         if foreign_keys:
             fields_str += ', ' + ', '.join(foreign_keys)
 
-        connection.execute(f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})')
-        print("Table created if not exists: ", cls._table)
+        sql_statement = f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})'
+
+        connection.execute(sql_statement)
+        print(sql_statement)
 
     def save(self):
         connection = ConnectionPool.get_connection()
@@ -77,22 +79,32 @@ class Model(metaclass=ModelMeta):
         fields = []
         values = []
 
-        for field in self._fields:
-            value = getattr(self, field)
+        for field_name in self._fields:
+            value = getattr(self, field_name)
 
-            self._fields[field].validate(value)
+            field = self._fields[field_name]
 
-            fields.append(field)
+            if value is None and field.default is not None:
+                if callable(field.default):
+                    value = field.default()
+                else:
+                    # If the default value is not a callable function
+                    # Let the database fill in the default value
+                    continue
+
+            field.validate(value)
+
+            fields.append(field_name)
             if isinstance(value, Model):
                 if value.id is None:
                     value.save()
                 values.append(getattr(value, "id"))
             else:
-                values.append(getattr(self, field))
+                values.append(value)
 
         field_str = ', '.join(fields)
         placeholder_str = ', '.join(['?'] * len(fields))
-
+        print(f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})', values)
         sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
         cursor = connection.execute(sql_statement, values)
 
