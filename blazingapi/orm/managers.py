@@ -35,10 +35,10 @@ class RelatedModelManager:
 
     def __init__(self, model, foreign_instance):
         self.model = model
-        self.instance = foreign_instance
+        self.foreign_instance = foreign_instance
 
     def all(self):
-        return QuerySet(self.model).filter(**{f"{self.instance._table}": self.instance.id})
+        return QuerySet(self.model).filter(**{f"{self.foreign_instance._table}": self.foreign_instance.id})
 
     def filter(self, *args, **kwargs):
         return self.all().filter(*args, **kwargs)

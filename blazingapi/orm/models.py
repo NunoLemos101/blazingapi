@@ -1,7 +1,7 @@
 import inspect
 
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
-from blazingapi.orm.manager import Manager, RelatedModelManager
+from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
 
 
@@ -19,7 +19,6 @@ class ModelMeta(type):
     def __new__(cls, name, bases, attrs):
         fields = {}
         foreign_keys = {}
-
         for key, value in attrs.items():
             if isinstance(value, Field):
                 fields[key] = value
@@ -37,7 +36,13 @@ class ModelMeta(type):
             attrs['_table'] = name.lower()
 
         new_class = super().__new__(cls, name, bases, attrs)
+
         new_class.manager = Manager(new_class)
+        for key, value in foreign_keys.items():
+            related_fields = getattr(value.reference_model, '_related_fields')
+            related_name = value.related_name if value.related_name is not None else f'{new_class._table}_set'
+            related_fields[related_name] = new_class
+            setattr(value.reference_model, '_related_fields', related_fields)
         return new_class
 
 
@@ -48,6 +53,7 @@ class Model(metaclass=ModelMeta):
     """
     _fields = {}
     _foreign_keys = {}
+    _related_fields = {}
     _table = None
     serializable_fields = '__all__'
     id = PrimaryKeyField()
@@ -80,10 +86,13 @@ class Model(metaclass=ModelMeta):
                         related_name = f'{self._table}_set'
                     setattr(value, related_name, RelatedModelManager(self.__class__, value))
                 else:
-                    # This allows for lazy loading in the ForeignKeyField.__get__ method
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
+
+        for related_field in self._related_fields:
+            setattr(self, related_field, RelatedModelManager(self._related_fields[related_field], self))
+
 
     @classmethod
     def create_table(cls):

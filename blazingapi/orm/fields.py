@@ -1,6 +1,6 @@
 from enum import Enum
 
-from blazingapi.orm.manager import Manager
+from blazingapi.orm.managers import Manager
 from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, \
     PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
 
