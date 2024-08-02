@@ -4,7 +4,7 @@ import inspect
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
-from blazingapi.orm.relationships import LazyOneToOneReverseRelationship
+from blazingapi.orm.relationships import LazyOneToOneRelationship
 
 
 def accepts_kwargs(func):
@@ -78,7 +78,6 @@ class Model(metaclass=ModelMeta):
                         value = field.default()
                 else:
                     value = field.default
-
             if field_name in self._foreign_keys:
                 if isinstance(value, Model) and type(field) == ForeignKeyField:
                     setattr(self, field_name, value)
@@ -88,23 +87,25 @@ class Model(metaclass=ModelMeta):
                         related_name = f'{self._table}_set'
                     setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
                 else:
+                    if isinstance(field, ForeignKeyField):
+                        one_to_one_relationship = LazyOneToOneRelationship(field.reference_model, "id")
+                        setattr(self.__class__, field_name, one_to_one_relationship)
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
 
         for related_field in self._related_fields:
-            # Cross self._foreign_keys with self._related_fields
             context = self._related_fields[related_field]
-            if context["is_one_to_one_relationship"] is False:
-                setattr(self, related_field, RelatedModelManager(context["model"], self, context["column_name"]))
-            else:
+            if context["is_one_to_one_relationship"]:
                 """                
                 Here we use self.__class__ because we want to set the attribute as a class attribute
                 and not as an instance attribute because we want to apply the descriptor protocol and
                 call OneToOneField.__get__ method when accessing the attribute.
                 """
-                one_to_one_relationship = LazyOneToOneReverseRelationship(context["model"], context["column_name"])
+                one_to_one_relationship = LazyOneToOneRelationship(context["model"], context["column_name"])
                 setattr(self.__class__, related_field, one_to_one_relationship)
+            else:
+                setattr(self, related_field, RelatedModelManager(context["model"], self, context["column_name"]))
 
     @classmethod
     def create_table(cls):

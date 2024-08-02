@@ -3,10 +3,9 @@ from blazingapi.orm.query import QuerySet
 
 class Manager:
 
-    cache = {}
-
     def __init__(self, model):
         self.model = model
+        self.cache = {}
 
     def all(self):
         return QuerySet(self.model).all()

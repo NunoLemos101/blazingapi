@@ -124,7 +124,7 @@ class QuerySet:
         query = f'SELECT * FROM {self.model._table} WHERE {where_clause}'
         cursor = connection.execute(query, values)
         row = cursor.fetchone()
-
+        print(f'SELECT * FROM {self.model._table} WHERE {where_clause}', values)
         if row is None:
             return None
 
@@ -150,6 +150,7 @@ class QuerySet:
 
             if self._offset is not None:
                 query += f' OFFSET {self._offset}'
+            print(query, values)
             cursor = connection.execute(query, values)
             rows = cursor.fetchall()
             columns = [col[0] for col in cursor.description]
