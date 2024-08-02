@@ -1,9 +1,22 @@
+import copy
+import importlib
 import inspect
 
-from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField
+from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
+from blazingapi.orm.relationships import OneToOneReverseRelationship
+from blazingapi.settings import settings
 
+
+def create_all_tables():
+    created_tables = []
+    for module_name in settings.MODEL_FILES:
+        module = importlib.import_module(module_name)
+        for name, obj in inspect.getmembers(module):
+            if inspect.isclass(obj) and issubclass(obj, Model) and obj is not Model and obj not in created_tables:
+                created_tables.append(obj)
+                obj.create_table()
 
 def accepts_kwargs(func):
     # Get the signature of the callable
@@ -39,9 +52,9 @@ class ModelMeta(type):
 
         new_class.manager = Manager(new_class)
         for key, value in foreign_keys.items():
-            related_fields = getattr(value.reference_model, '_related_fields')
+            related_fields = copy.deepcopy(getattr(value.reference_model, '_related_fields'))
             related_name = value.related_name if value.related_name is not None else f'{new_class._table}_set'
-            related_fields[related_name] = new_class
+            related_fields[related_name] = {'model': new_class, 'column_name': key, "field": value, "is_one_to_one_relationship": isinstance(value, OneToOneField)}
             setattr(value.reference_model, '_related_fields', related_fields)
         return new_class
 
@@ -78,27 +91,39 @@ class Model(metaclass=ModelMeta):
                     value = field.default
 
             if field_name in self._foreign_keys:
-                if isinstance(value, Model):
+                if isinstance(value, Model) and type(field) == ForeignKeyField:
                     setattr(self, field_name, value)
                     foreign_key = self._foreign_keys[field_name]
                     related_name = foreign_key.related_name
                     if foreign_key.related_name is None:
                         related_name = f'{self._table}_set'
-                    setattr(value, related_name, RelatedModelManager(self.__class__, value))
+                    setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
                 else:
+                    print(f"_{field_name}_id")
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
 
         for related_field in self._related_fields:
-            setattr(self, related_field, RelatedModelManager(self._related_fields[related_field], self))
-
+            # Cross self._foreign_keys with self._related_fields
+            context = self._related_fields[related_field]
+            if context["is_one_to_one_relationship"] is False:
+                setattr(self, related_field, RelatedModelManager(context["model"], self, context["column_name"]))
+            else:
+                """                
+                Here we use self.__class__ because we want to set the attribute as a class attribute
+                and not as an instance attribute because we want to apply the descriptor protocol and
+                call OneToOneField.__get__ method when accessing the attribute.
+                """
+                one_to_one_relationship = OneToOneReverseRelationship(context["model"], context["column_name"])
+                setattr(self.__class__, related_field, one_to_one_relationship)
 
     @classmethod
     def create_table(cls):
         connection = ConnectionPool.get_connection()
         fields = [field.render_sql(name) for name, field in cls._fields.items()]
-        foreign_keys = [field.render_foreign_key_sql(name) for name, field in cls._fields.items() if isinstance(field, ForeignKeyField)]
+        foreign_keys = [field.render_foreign_key_sql(name) for name, field in cls._fields.items() if
+                        isinstance(field, ForeignKeyField)]
 
         fields_str = ', '.join(fields)
         if foreign_keys:

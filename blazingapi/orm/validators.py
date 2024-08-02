@@ -20,7 +20,7 @@ class EmailValidator(BaseValidator):
     )
 
     def __call__(self, value):
-        if value and not self.email_regex.match(value):
+        if value is not None and not self.email_regex.match(value):
             raise ValueError(f"Invalid email address: {value}")
 
 

@@ -112,8 +112,12 @@ class ForeignKeyField(Field):
         reference_field = 'id'
         return f'FOREIGN KEY("{name}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {self.on_delete.value} ON UPDATE {self.on_update.value}'
 
+    def __set_name__(self, owner, name):
+        self.column_name = name
+
     def __get__(self, instance, owner):
-        return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.reference_model._table}_id"))
+        print(f"Getting {self.column_name}")
+        return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.column_name}_id"))
 
 
 class OneToOneField(ForeignKeyField):
@@ -127,6 +131,9 @@ class OneToOneField(ForeignKeyField):
         self.on_delete = on_delete
         self.on_update = on_update
         self.related_name = related_name
+
+    def __get__(self, instance, owner):
+        return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.column_name}_id"))
 
 
 class PositiveIntegerField(Field):

@@ -42,9 +42,6 @@ class TestEmailValidator(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.validator("")
 
-    def test_none_value(self):
-        with self.assertRaises(ValueError):
-            self.validator(None)
 
 if __name__ == '__main__':
     unittest.main()

@@ -33,12 +33,13 @@ class Manager:
 
 class RelatedModelManager:
 
-    def __init__(self, model, foreign_instance):
+    def __init__(self, model, foreign_instance, column_name):
         self.model = model
         self.foreign_instance = foreign_instance
+        self.column_name = column_name
 
     def all(self):
-        return QuerySet(self.model).filter(**{f"{self.foreign_instance._table}": self.foreign_instance.id})
+        return QuerySet(self.model).filter(**{f"{self.column_name}": self.foreign_instance.id})
 
     def filter(self, *args, **kwargs):
         return self.all().filter(*args, **kwargs)
