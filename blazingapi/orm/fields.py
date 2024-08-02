@@ -102,8 +102,6 @@ class ForeignKeyField(Field):
         self.on_update = on_update
         self.related_name = related_name
 
-    def render_sql(self, name):
-        return super().render_sql(name)
 
     def render_foreign_key_sql(self, name):
         if self.reference_model is str:
@@ -116,6 +114,19 @@ class ForeignKeyField(Field):
 
     def __get__(self, instance, owner):
         return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.reference_model._table}_id"))
+
+
+class OneToOneField(ForeignKeyField):
+    """
+    A field that references another model with a unique constraint.
+    """
+    def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, related_name=None, default=None, nullable=True, validators=None):
+        super().__init__(f'INTEGER', default=default, nullable=nullable, validators=validators)
+        self.reference_model = reference_model
+        self.unique = True
+        self.on_delete = on_delete
+        self.on_update = on_update
+        self.related_name = related_name
 
 
 class PositiveIntegerField(Field):
