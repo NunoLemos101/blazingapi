@@ -1,22 +1,11 @@
 import copy
-import importlib
 import inspect
 
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
-from blazingapi.orm.relationships import OneToOneReverseRelationship
-from blazingapi.settings import settings
+from blazingapi.orm.relationships import LazyOneToOneReverseRelationship
 
-
-def create_all_tables():
-    created_tables = []
-    for module_name in settings.MODEL_FILES:
-        module = importlib.import_module(module_name)
-        for name, obj in inspect.getmembers(module):
-            if inspect.isclass(obj) and issubclass(obj, Model) and obj is not Model and obj not in created_tables:
-                created_tables.append(obj)
-                obj.create_table()
 
 def accepts_kwargs(func):
     # Get the signature of the callable
@@ -99,7 +88,6 @@ class Model(metaclass=ModelMeta):
                         related_name = f'{self._table}_set'
                     setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
                 else:
-                    print(f"_{field_name}_id")
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
@@ -115,7 +103,7 @@ class Model(metaclass=ModelMeta):
                 and not as an instance attribute because we want to apply the descriptor protocol and
                 call OneToOneField.__get__ method when accessing the attribute.
                 """
-                one_to_one_relationship = OneToOneReverseRelationship(context["model"], context["column_name"])
+                one_to_one_relationship = LazyOneToOneReverseRelationship(context["model"], context["column_name"])
                 setattr(self.__class__, related_field, one_to_one_relationship)
 
     @classmethod
@@ -132,7 +120,6 @@ class Model(metaclass=ModelMeta):
         sql_statement = f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})'
 
         connection.execute(sql_statement)
-        print(sql_statement)
 
     def save(self):
         connection = ConnectionPool.get_connection()
@@ -163,7 +150,6 @@ class Model(metaclass=ModelMeta):
 
         field_str = ', '.join(fields)
         placeholder_str = ', '.join(['?'] * len(fields))
-        print(f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})', values)
         sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
         cursor = connection.execute(sql_statement, values)
 

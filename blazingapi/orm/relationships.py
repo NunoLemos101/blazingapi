@@ -1,6 +1,6 @@
 
 
-class OneToOneReverseRelationship:
+class LazyOneToOneReverseRelationship:
 
     def __init__(self, owner_model, column_name):
         self.owner_model = owner_model

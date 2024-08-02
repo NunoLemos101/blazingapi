@@ -122,7 +122,6 @@ class QuerySet:
 
         where_clause, values = self.q_obj.get_sql()
         query = f'SELECT * FROM {self.model._table} WHERE {where_clause}'
-        print(query, values)
         cursor = connection.execute(query, values)
         row = cursor.fetchone()
 
@@ -151,7 +150,6 @@ class QuerySet:
 
             if self._offset is not None:
                 query += f' OFFSET {self._offset}'
-            print(query, values)
             cursor = connection.execute(query, values)
             rows = cursor.fetchall()
             columns = [col[0] for col in cursor.description]

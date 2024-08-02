@@ -53,7 +53,6 @@ class TestQ(unittest.TestCase):
         q2 = Q(age=20)
         q3 = q1 | q2
         sql, values = q3.get_sql()
-        print(sql)
         self.assertEqual(sql, '((("id" = ?)) AND (("name" = ?))) OR (("age" = ?))')
         self.assertEqual(values, [1, "test", 20])
 

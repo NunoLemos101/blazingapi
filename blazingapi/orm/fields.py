@@ -1,8 +1,6 @@
 from enum import Enum
 
-from blazingapi.orm.managers import Manager
-from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, \
-    PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
+from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
 
 
 class ForeignKeyAction(Enum):
@@ -116,7 +114,6 @@ class ForeignKeyField(Field):
         self.column_name = name
 
     def __get__(self, instance, owner):
-        print(f"Getting {self.column_name}")
         return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.column_name}_id"))
 
 
