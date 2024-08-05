@@ -88,7 +88,7 @@ class Model(metaclass=ModelMeta):
                     setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
                 else:
                     if isinstance(field, ForeignKeyField):
-                        one_to_one_relationship = LazyOneToOneRelationship(field.reference_model, "id")
+                        one_to_one_relationship = LazyOneToOneRelationship(field.reference_model, value, "id")
                         setattr(self.__class__, field_name, one_to_one_relationship)
                     setattr(self, f"_{field_name}_id", value)
             else:
@@ -100,12 +100,13 @@ class Model(metaclass=ModelMeta):
                 """                
                 Here we use self.__class__ because we want to set the attribute as a class attribute
                 and not as an instance attribute because we want to apply the descriptor protocol and
-                call OneToOneField.__get__ method when accessing the attribute.
+                call LazyOneToOneRelationship.__get__ method when accessing the attribute.
                 """
-                one_to_one_relationship = LazyOneToOneRelationship(context["model"], context["column_name"])
+                one_to_one_relationship = LazyOneToOneRelationship(context["model"], self.id, context["column_name"])
                 setattr(self.__class__, related_field, one_to_one_relationship)
             else:
-                setattr(self, related_field, RelatedModelManager(context["model"], self, context["column_name"]))
+                manager = RelatedModelManager(context["model"], self, context["column_name"])
+                setattr(self, related_field, manager)
 
     @classmethod
     def create_table(cls):
@@ -188,7 +189,7 @@ class Model(metaclass=ModelMeta):
         connection.commit()
 
     def serialize(self):
-
+        print(self.id)
         result = {}
 
         serializable_fields = self._fields if self.serializable_fields == '__all__' else self.serializable_fields
