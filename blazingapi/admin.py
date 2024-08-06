@@ -20,7 +20,8 @@ def startproject(project_name):
         'main.py': '''\
 from blazingapi.server import run
 
-run()
+if __name__ == '__main__':
+    run()
         ''',
         'settings.py': '''\
 VIEW_FILES = [
