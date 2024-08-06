@@ -58,6 +58,7 @@ class Model(metaclass=ModelMeta):
     _related_fields = {}
     _table = None
     serializable_fields = '__all__'
+    depth_serialization_fields = []
     id = PrimaryKeyField()
     cache = {}
 
@@ -187,7 +188,10 @@ class Model(metaclass=ModelMeta):
         for field in serializable_fields:
             value = getattr(self, field)
             if isinstance(value, Model):
-                result[field] = value.serialize()
+                if field in self.depth_serialization_fields:
+                    result[field] = value.serialize()
+                else:
+                    result[field] = value.id
             else:
                 result[field] = value
 
