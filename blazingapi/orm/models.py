@@ -4,7 +4,7 @@ import inspect
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.query import ConnectionPool
-from blazingapi.orm.relationships import LazyOneToOneRelationship
+from blazingapi.orm.relationships import LazyOneToOneReverseRelationship
 
 
 def accepts_kwargs(func):
@@ -62,7 +62,6 @@ class Model(metaclass=ModelMeta):
     cache = {}
 
     def __init__(self, **kwargs):
-
         for field_name in kwargs:
             if field_name not in self._fields:
                 raise AttributeError(f"Invalid field '{field_name}' for model '{self.__class__.__name__}'")
@@ -87,9 +86,6 @@ class Model(metaclass=ModelMeta):
                         related_name = f'{self._table}_set'
                     setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
                 else:
-                    if isinstance(field, ForeignKeyField):
-                        one_to_one_relationship = LazyOneToOneRelationship(field.reference_model, value, "id")
-                        setattr(self.__class__, field_name, one_to_one_relationship)
                     setattr(self, f"_{field_name}_id", value)
             else:
                 setattr(self, field_name, value)
@@ -97,13 +93,8 @@ class Model(metaclass=ModelMeta):
         for related_field in self._related_fields:
             context = self._related_fields[related_field]
             if context["is_one_to_one_relationship"]:
-                """                
-                Here we use self.__class__ because we want to set the attribute as a class attribute
-                and not as an instance attribute because we want to apply the descriptor protocol and
-                call LazyOneToOneRelationship.__get__ method when accessing the attribute.
-                """
-                one_to_one_relationship = LazyOneToOneRelationship(context["model"], self.id, context["column_name"])
-                setattr(self.__class__, related_field, one_to_one_relationship)
+                one_to_one_relationship = LazyOneToOneReverseRelationship(context["model"], self.id, context["column_name"])
+                setattr(self, f"one_to_one_{related_field}", one_to_one_relationship)
             else:
                 manager = RelatedModelManager(context["model"], self, context["column_name"])
                 setattr(self, related_field, manager)
@@ -189,7 +180,6 @@ class Model(metaclass=ModelMeta):
         connection.commit()
 
     def serialize(self):
-        print(self.id)
         result = {}
 
         serializable_fields = self._fields if self.serializable_fields == '__all__' else self.serializable_fields
@@ -202,3 +192,8 @@ class Model(metaclass=ModelMeta):
                 result[field] = value
 
         return result
+
+    def __getattr__(self, item):
+        if item in self._related_fields:
+            return getattr(self, f"one_to_one_{item}").lazy_load()
+        return super().__getattribute__(item)

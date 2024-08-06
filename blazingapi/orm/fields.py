@@ -130,6 +130,9 @@ class OneToOneField(ForeignKeyField):
         self.related_name = related_name
 
     def __get__(self, instance, owner):
+        """
+        This method is triggered when the field is accessed directly.
+        """
         return self.reference_model.manager.get_foreign_key_reference_with_cache(fk=getattr(instance, f"_{self.column_name}_id"))
 
 
