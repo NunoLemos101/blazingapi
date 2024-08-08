@@ -1,9 +1,10 @@
 from blazingapi.app import app
-from blazingapi.auth.models import User
 from blazingapi.auth.permissions import IsAuthenticated
-from blazingapi.exceptions import AuthenticationFailedException
 from blazingapi.response import Response
 from blazingapi.settings import settings
+from blazingapi.auth.models import User
+from blazingapi.auth.exceptions import AuthenticationFailedException
+
 
 
 @app.post(settings.LOGIN_ENDPOINT)

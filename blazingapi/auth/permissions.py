@@ -1,5 +1,5 @@
 from blazingapi.auth.models import AnonymousUser
-from blazingapi.exceptions import AuthenticationFailedException
+from blazingapi.auth.exceptions import AuthenticationFailedException
 
 
 class IsAuthenticated:

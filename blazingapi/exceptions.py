@@ -13,9 +13,3 @@ class APIException(Exception):
             self.status_code = status_code
 
         super().__init__(self.detail)
-
-
-class AuthenticationFailedException(APIException):
-    status_code = 401
-    default_detail = 'Authentication credentials were not provided or are invalid.'
-    default_code = 'authentication_failed'
