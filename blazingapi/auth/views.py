@@ -1,5 +1,4 @@
 from blazingapi.app import app
-from blazingapi.auth.decorators import login_required
 from blazingapi.auth.models import User
 from blazingapi.auth.permissions import IsAuthenticated
 from blazingapi.response import Response
