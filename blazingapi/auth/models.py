@@ -13,7 +13,7 @@ class User(Model):
     username = VarCharField(max_length=100, unique=True)
     email = VarCharField(max_length=100, unique=True)
     password_hash = VarCharField(max_length=60)
-    token = VarCharField(max_length=100, nullable=True)
+    token = VarCharField(max_length=100, unique=True, nullable=True)
 
     @property
     def is_authenticated(self):
