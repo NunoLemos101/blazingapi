@@ -1,6 +1,7 @@
 from blazingapi.app import app
 from blazingapi.auth.models import User
 from blazingapi.auth.permissions import IsAuthenticated
+from blazingapi.exceptions import AuthenticationFailedException
 from blazingapi.response import Response
 from blazingapi.settings import settings
 
@@ -19,7 +20,7 @@ def login(request):
     if user.check_password(password):
         return Response(body=user, status=200)
 
-    return Response(body={"error": "Invalid credentials"}, status=401)
+    raise AuthenticationFailedException()
 
 
 @app.post(settings.REGISTER_ENDPOINT)
@@ -30,6 +31,6 @@ def register(request):
     return Response(body=user, status=201)
 
 
-@app.get(settings.ME_ENDPOINT, permission_classes=[IsAuthenticated])
+@app.get(settings.ME_ENDPOINT, permissions=[IsAuthenticated])
 def me(request):
     return Response(body=request.user, status=200)

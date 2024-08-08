@@ -6,8 +6,10 @@ import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from blazingapi.app import app
+from blazingapi.exceptions import APIException
 from blazingapi.orm.models import Model
 from blazingapi.request import Request
+from blazingapi.response import Response
 from blazingapi.settings import settings
 
 
@@ -57,7 +59,10 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         app.execute_all_middleware(request)
 
-        response = app.handle_request(request)
+        try:
+            response = app.handle_request(request)
+        except APIException as e:
+            response = Response(body={'error': e.default_detail, 'code': e.default_code}, status=e.status_code)
 
         if response:
             app.execute_all_middleware_after(request, response)
