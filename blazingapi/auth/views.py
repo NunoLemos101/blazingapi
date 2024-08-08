@@ -1,4 +1,5 @@
 from blazingapi.app import app
+from blazingapi.auth.decorators import login_required
 from blazingapi.auth.models import User
 from blazingapi.response import Response
 from blazingapi.settings import settings
@@ -29,6 +30,7 @@ def register(request):
     return Response(body=user, status=201)
 
 
+@login_required
 @app.get(settings.ME_ENDPOINT)
 def me(request):
     return Response(body=request.user, status=200)
