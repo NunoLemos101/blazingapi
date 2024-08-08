@@ -34,19 +34,19 @@ class Router:
             start_response('404 Not Found', [('Content-Type', 'text/plain')])
             return [b'404 Not Found']
 
-    def get(self, path: str):
-        return self.add_route(path, "GET")
+    def get(self, path: str, permissions=None):
+        return self.add_route(path, "GET", permissions)
 
-    def post(self, path: str):
-        return self.add_route(path, "POST")
+    def post(self, path: str, permissions=None):
+        return self.add_route(path, "POST", permissions)
 
-    def put(self, path: str):
-        return self.add_route(path, "PUT")
+    def put(self, path: str, permissions=None):
+        return self.add_route(path, "PUT", permissions)
 
-    def delete(self, path: str):
-        return self.add_route(path, "DELETE")
+    def delete(self, path: str, permissions=None):
+        return self.add_route(path, "DELETE", permissions)
 
-    def add_route(self, path: str, method: str):
+    def add_route(self, path: str, method: str, permissions):
         method = method.upper()
         path_regex = re.sub(r'{(\w+)}', r'(?P<\1>[^/]+)', path)
 
@@ -54,7 +54,10 @@ class Router:
             self.routes[path_regex] = {}
 
         def decorator(handler):
-            self.routes[path_regex][method] = handler
+            self.routes[path_regex][method] = {
+                "handler": handler,
+                "permissions": permissions
+            }
             return handler
 
         return decorator
@@ -64,15 +67,23 @@ class Router:
         for path_regex, methods_dict in self.routes.items():
             match = re.match(f"^{path_regex}$", path)
             if match:
-                handler = methods_dict.get(method)
-                if handler:
-                    return handler, match.groupdict()
+                route_info = methods_dict.get(method)
+                if route_info:
+                    handler = route_info['handler']
+                    permissions = route_info['permissions']
+                    return handler, permissions, match.groupdict()
 
-        return None, {}
+        return None, [], {}
 
     def handle_request(self, request: Request):
-        handler, path_params = self.resolve(request.path, request.method)
+        handler, permissions, path_params = self.resolve(request.path, request.method)
         if handler:
+            for permission in permissions:
+                if isinstance(permission, type):
+                    permission_instance = permission()
+                    permission_instance(request)
+                else:
+                    permission(request)
             return handler(request, **path_params)
         else:
             return None
