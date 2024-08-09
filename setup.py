@@ -7,13 +7,14 @@ setup(
     description='A growing framework for building web applications.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    version='0.0.41',
+    version='0.0.42',
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
         'bcrypt',
         'click',
         'gunicorn',
+        'jsonschema>=3.2.0',
     ],
     entry_points={
         'console_scripts': [
