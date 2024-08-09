@@ -78,12 +78,13 @@ class Router:
     def handle_request(self, request: Request):
         handler, permissions, path_params = self.resolve(request.path, request.method)
         if handler:
-            for permission in permissions:
-                if isinstance(permission, type):
-                    permission_instance = permission()
-                    permission_instance(request)
-                else:
-                    permission(request)
+            if permissions is not None:
+                for permission in permissions:
+                    if isinstance(permission, type):
+                        permission_instance = permission()
+                        permission_instance(request)
+                    else:
+                        permission(request)
             return handler(request, **path_params)
         else:
             return None
