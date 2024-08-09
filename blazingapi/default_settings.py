@@ -1,3 +1,5 @@
+DEBUG = True
+
 VIEW_FILES = [
     "blazingapi.auth.views",
     "views",

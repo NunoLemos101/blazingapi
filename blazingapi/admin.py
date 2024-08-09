@@ -24,6 +24,8 @@ if __name__ == '__main__':
     run()
         ''',
         'settings.py': '''\
+DEBUG = True
+
 VIEW_FILES = [
     "blazingapi.auth.views",
     "views",
