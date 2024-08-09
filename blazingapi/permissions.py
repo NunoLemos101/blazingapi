@@ -13,6 +13,9 @@ class BasePermission:
 
 
 class HasHeader(BasePermission):
+    """
+    Allows access only if the request has the given header.
+    """
 
     def __init__(self, header):
         self.header = header
