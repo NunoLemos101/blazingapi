@@ -62,7 +62,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             response = app.handle_request(request)
         except APIException as e:
-            response = Response(body={'error': e.default_detail, 'code': e.default_code}, status=e.status_code)
+            response = Response(body=e.serialize(), status=e.status_code)
 
         if response:
             app.execute_all_middleware_after(request, response)
