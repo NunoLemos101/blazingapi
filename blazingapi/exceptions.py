@@ -1,6 +1,7 @@
 import sys
 import traceback
 
+from blazingapi.request import Request
 from blazingapi.settings import settings
 
 
@@ -20,14 +21,24 @@ class APIException(Exception):
 
         super().__init__(self.detail)
 
-    def serialize(self):
+    def serialize(self, request=None):
         result = {
             "code": self.default_code,
             "detail": self.detail
         }
 
         if settings.DEBUG:
-            result["traceback"] = self._get_traceback()
+            result["debug"] = {
+                "info": "You are seeing this because you have DEBUG=True in your settings.py file.",
+                "traceback": self._get_traceback()
+            }
+            if request is not None and isinstance(request, Request):
+                result["debug"]["request"] = {
+                    "method": request.method,
+                    "path": request.path,
+                    "headers": {k: v for k, v in request.headers.items()},
+                    "body": request.data
+                }
 
         return result
 
