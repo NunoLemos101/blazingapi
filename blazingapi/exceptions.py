@@ -1,3 +1,6 @@
+import sys
+import traceback
+
 from blazingapi.settings import settings
 
 
@@ -24,9 +27,14 @@ class APIException(Exception):
         }
 
         if settings.DEBUG:
-            result["traceback"] = self.__traceback__
+            result["traceback"] = self._get_traceback()
 
         return result
+
+    def _get_traceback(self):
+        exc_type, exc_value, tb = sys.exc_info()
+        tb_list = traceback.format_exception(exc_type, exc_value, tb)
+        return tb_list
 
 
 class NotFoundException(APIException):
