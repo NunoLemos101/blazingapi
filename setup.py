@@ -15,6 +15,8 @@ setup(
         'click',
         'gunicorn',
         'jsonschema>=3.2.0',
+        'psycopg2',
+        'psycopg2-binary',
     ],
     entry_points={
         'console_scripts': [

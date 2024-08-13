@@ -1,10 +1,11 @@
 import copy
 import inspect
 
+from blazingapi.orm.engines import SQLiteEngine, PostgresSQLEngine, ConnectionPool
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
-from blazingapi.orm.query import ConnectionPool
 from blazingapi.orm.relationships import LazyOneToOneReverseRelationship
+from blazingapi.settings import settings
 
 
 def accepts_kwargs(func):
@@ -19,6 +20,13 @@ def accepts_kwargs(func):
 
 class ModelMeta(type):
     def __new__(cls, name, bases, attrs):
+
+        if name == "Model":
+            if settings.DB_CONNECTION["driver"] == "sqlite":
+                attrs['engine'] = SQLiteEngine()
+            elif settings.DB_CONNECTION["driver"] == "postgres":
+                attrs['engine'] = PostgresSQLEngine()
+
         fields = {}
         foreign_keys = {}
         for key, value in attrs.items():
@@ -61,6 +69,7 @@ class Model(metaclass=ModelMeta):
     depth_serialization_fields = []
     id = PrimaryKeyField()
     cache = {}
+    engine = None
 
     def __init__(self, **kwargs):
         for field_name in kwargs:
@@ -102,7 +111,8 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def create_table(cls):
-        connection = ConnectionPool.get_connection()
+        connection = ConnectionPool.get_connection(cls.engine)
+        cursor = connection.cursor()
         fields = [field.render_sql(name) for name, field in cls._fields.items()]
         foreign_keys = [field.render_foreign_key_sql(name) for name, field in cls._fields.items() if
                         isinstance(field, ForeignKeyField)]
@@ -112,12 +122,14 @@ class Model(metaclass=ModelMeta):
             fields_str += ', ' + ', '.join(foreign_keys)
 
         sql_statement = f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})'
+        print(sql_statement)
+        cursor.execute(sql_statement)
 
-        connection.execute(sql_statement)
+        connection.commit()
 
     def save(self):
-        connection = ConnectionPool.get_connection()
-
+        connection = ConnectionPool.get_connection(self.engine)
+        cursor = connection.cursor()
         fields = []
         values = []
 
@@ -143,9 +155,9 @@ class Model(metaclass=ModelMeta):
                 values.append(value)
 
         field_str = ', '.join(fields)
-        placeholder_str = ', '.join(['?'] * len(fields))
+        placeholder_str = ', '.join([self.engine.placeholder] * len(fields))
         sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
-        cursor = connection.execute(sql_statement, values)
+        cursor.execute(sql_statement, values)
 
         self.id = cursor.lastrowid
         connection.commit()
@@ -161,13 +173,14 @@ class Model(metaclass=ModelMeta):
 
             self._fields[key].validate(kwargs[key])
 
-            fields.append(f'{key}=?')
+            fields.append(f'{key}={self.engine.placeholder}')
 
-        connection = ConnectionPool.get_connection()
-        sql_statement = f'UPDATE {self._table} SET {", ".join(fields)} WHERE id=?'
+        connection = ConnectionPool.get_connection(self.engine)
+        cursor = connection.cursor()
+        sql_statement = f'UPDATE {self._table} SET {", ".join(fields)} WHERE id={self.engine.placeholder}'
         values = list(kwargs.values()) + [self.id]
 
-        connection.execute(sql_statement, values)
+        cursor.execute(sql_statement, values)
 
         connection.commit()
 
@@ -176,8 +189,9 @@ class Model(metaclass=ModelMeta):
             setattr(self, key, value)
 
     def delete(self):
-        connection = ConnectionPool.get_connection()
-        connection.execute(f'DELETE FROM {self._table} WHERE id=?', [self.id])
+        connection = ConnectionPool.get_connection(self.engine)
+        cursor = connection.cursor()
+        cursor.execute(f'DELETE FROM {self._table} WHERE id={self.engine.placeholder}', [self.id])
         connection.commit()
 
     def serialize(self):

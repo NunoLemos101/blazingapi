@@ -1,6 +1,8 @@
 from enum import Enum
 
+from blazingapi.orm.engines import SQLiteEngine, PostgresSQLEngine
 from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
+from blazingapi.settings import settings
 
 
 class ForeignKeyAction(Enum):
@@ -11,14 +13,25 @@ class ForeignKeyAction(Enum):
     NO_ACTION = "NO ACTION"
 
 
-class Field:
+class FieldMeta(type):
+    def __new__(cls, name, bases, attrs):
+        if name == "Field":
+            if settings.DB_CONNECTION["driver"] == "sqlite":
+                attrs['engine'] = SQLiteEngine()
+            elif settings.DB_CONNECTION["driver"] == "postgres":
+                attrs['engine'] = PostgresSQLEngine()
+        return super().__new__(cls, name, bases, attrs)
 
-    def __init__(self, field_type, default=None, nullable=True, unique=False, choices=None, validators=None):
 
+class Field(metaclass=FieldMeta):
+
+    engine = None
+
+    def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
         if nullable is False and default is None:
             raise ValueError("Non-nullable fields must have a default value")
 
-        self.field_type = field_type
+        self.field_type = self.engine.data_types[self.__class__.__name__]
         self.default = default
         self.nullable = nullable
         self.unique = unique
@@ -51,7 +64,7 @@ class IntegerField(Field):
     """
 
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("INTEGER", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
 
 
 class TextField(Field):
@@ -59,7 +72,7 @@ class TextField(Field):
     A field that stores text.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__('TEXT', default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
 
 
 class VarCharField(Field):
@@ -67,8 +80,9 @@ class VarCharField(Field):
     A field that stores variable-length strings.
     """
     def __init__(self, max_length, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__(f'VARCHAR({max_length})', default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.max_length = max_length
+        self.field_type = self.field_type % {'max_length': max_length}
 
 
 class EmailField(Field):
@@ -76,7 +90,7 @@ class EmailField(Field):
     A field that validates email addresses.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__('VARCHAR', default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.max_length = 256
         self.validators.append(EmailValidator())
 
@@ -86,7 +100,7 @@ class PrimaryKeyField(Field):
     A field that is the primary key of the table.
     """
     def __init__(self):
-        super().__init__("INTEGER PRIMARY KEY")
+        super().__init__()
 
 
 class ForeignKeyField(Field):
@@ -94,7 +108,7 @@ class ForeignKeyField(Field):
     A field that references another model.
     """
     def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, related_name=None, default=None, nullable=True, validators=None):
-        super().__init__(f'INTEGER', default=default, nullable=nullable, validators=validators)  # Assuming the reference is always an Integer ID for simplicity
+        super().__init__(default=default, nullable=nullable, validators=validators)  # Assuming the reference is always an Integer ID for simplicity
         self.reference_model = reference_model
         self.on_delete = on_delete
         self.on_update = on_update
@@ -122,7 +136,7 @@ class OneToOneField(ForeignKeyField):
     A field that references another model with a unique constraint.
     """
     def __init__(self, reference_model, on_delete=ForeignKeyAction.CASCADE, on_update=ForeignKeyAction.CASCADE, related_name=None, default=None, nullable=True, validators=None):
-        super().__init__(f'INTEGER', default=default, nullable=nullable, validators=validators)
+        super().__init__(reference_model, default=default, nullable=nullable, validators=validators)
         self.reference_model = reference_model
         self.unique = True
         self.on_delete = on_delete
@@ -141,7 +155,7 @@ class PositiveIntegerField(Field):
     A field that only accepts positive values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("INTEGER", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(PositiveNumberValidator())
 
 
@@ -150,7 +164,7 @@ class NegativeIntegerField(Field):
     A field that only accepts negative values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("INTEGER", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(NegativeNumberValidator())
 
 
@@ -159,7 +173,7 @@ class NonPositiveIntegerField(Field):
     A field that only accepts negative or zero values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("INTEGER", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(MaxValueValidator(0))
 
 
@@ -168,7 +182,7 @@ class NonNegativeIntegerField(Field):
     A field that only accepts positive or zero values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("INTEGER", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(MinValueValidator(0))
 
 
@@ -177,7 +191,7 @@ class FloatField(Field):
     A field that stores real values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("REAL", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
 
 
 class PositiveFloatField(Field):
@@ -185,7 +199,7 @@ class PositiveFloatField(Field):
     A field that only accepts positive real values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("REAL", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(PositiveNumberValidator())
 
 
@@ -194,7 +208,7 @@ class NegativeFloatField(Field):
     A field that only accepts negative real values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("REAL", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(NegativeNumberValidator())
 
 
@@ -203,7 +217,7 @@ class NonPositiveFloatField(Field):
     A field that only accepts negative or zero real values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("REAL", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(MaxValueValidator(0))
 
 
@@ -212,7 +226,7 @@ class NonNegativeFloatField(Field):
     A field that only accepts positive or zero real values.
     """
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("REAL", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(MinValueValidator(0))
 
 
@@ -222,5 +236,5 @@ class DateTimeField(Field):
     """
 
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
-        super().__init__("DATETIME", default, nullable, unique, choices, validators)
+        super().__init__(default, nullable, unique, choices, validators)
         self.validators.append(DateTimeValidator())

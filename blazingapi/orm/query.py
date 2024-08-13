@@ -1,30 +1,12 @@
-import sqlite3
-import threading
-
-from blazingapi.settings import settings
-
-
-class ConnectionPool:
-    _connections = threading.local()
-
-    @classmethod
-    def get_connection(cls):
-        if not hasattr(cls._connections, 'conn'):
-            cls._connections.conn = sqlite3.connect(settings.DB_FILE)
-        return cls._connections.conn
-
-    @classmethod
-    def close_connection(cls):
-        if hasattr(cls._connections, 'conn'):
-            cls._connections.conn.close()
-            del cls._connections.conn
+from blazingapi.orm.engines import ConnectionPool
 
 
 class Q:
-    def __init__(self, **kwargs):
+    def __init__(self, engine, **kwargs):
         self.query = kwargs
         self.connector = "AND"  # The default connector for conditions within this Q object
         self.children = []
+        self.engine = engine
 
     def add(self, q_object, connector=None):
         if not isinstance(q_object, Q):
@@ -36,7 +18,7 @@ class Q:
     def __or__(self, other):
         if not isinstance(other, Q):
             raise TypeError(f"Expected Q object for | operation, got {type(other).__name__}")
-        combined = Q()
+        combined = Q(self.engine)
         combined.connector = "OR"
         combined.add(self)
         combined.add(other, "OR")
@@ -45,7 +27,7 @@ class Q:
     def __and__(self, other):
         if not isinstance(other, Q):
             raise TypeError(f"Expected Q object for & operation, got {type(other).__name__}")
-        combined = Q()
+        combined = Q(self.engine)
         combined.connector = "AND"
         combined.add(self)
         combined.add(other, "AND")
@@ -58,11 +40,11 @@ class Q:
         for key, value in self.query.items():
             if key.endswith("__in"):
                 field = key[:-4]
-                placeholders = ', '.join(['?' for _ in value])
+                placeholders = ', '.join([self.engine.placeholder for _ in value])
                 sql.append(f'"{field}" IN ({placeholders})')
                 values.extend(value)
             else:
-                sql.append(f'"{key}" = ?')
+                sql.append(f'"{key}" = {self.engine.placeholder}')
                 values.append(value)
 
         # Ensure internal conditions are grouped with the internal connector
@@ -98,7 +80,7 @@ class QuerySet:
 
     def filter(self, *args, **kwargs):
         if kwargs:
-            q = Q(**kwargs)
+            q = Q(self.model.engine, **kwargs)
             if self.q_obj:
                 self.q_obj = self.q_obj & q
             else:
@@ -116,13 +98,14 @@ class QuerySet:
         return self
 
     def get(self):
-        connection = ConnectionPool.get_connection()
+        connection = ConnectionPool.get_connection(self.model.engine)
+        cursor = connection.cursor()
         if self.q_obj is None:
             raise ValueError("get() must be called with at least one filtering condition.")
 
         where_clause, values = self.q_obj.get_sql()
         query = f'SELECT * FROM {self.model._table} WHERE {where_clause}'
-        cursor = connection.execute(query, values)
+        cursor.execute(query, values)
         row = cursor.fetchone()
         print(f'SELECT * FROM {self.model._table} WHERE {where_clause}', values)
         if row is None:
@@ -137,7 +120,7 @@ class QuerySet:
 
     def _exec_query(self):
         if self.cache is None:
-            connection = ConnectionPool.get_connection()
+            connection = ConnectionPool.get_connection(self.model.engine)
             if self.q_obj is None:
                 query = f'SELECT * FROM {self.model._table}'
                 values = []
