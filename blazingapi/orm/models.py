@@ -69,7 +69,7 @@ class Model(metaclass=ModelMeta):
     depth_serialization_fields = []
     id = PrimaryKeyField()
     cache = {}
-    engine = None
+    engine: SQLiteEngine | PostgresSQLEngine = None
 
     def __init__(self, **kwargs):
         for field_name in kwargs:
@@ -122,7 +122,6 @@ class Model(metaclass=ModelMeta):
             fields_str += ', ' + ', '.join(foreign_keys)
 
         sql_statement = f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})'
-        print(sql_statement)
         cursor.execute(sql_statement)
 
         connection.commit()
@@ -154,9 +153,8 @@ class Model(metaclass=ModelMeta):
             else:
                 values.append(value)
 
-        field_str = ', '.join(fields)
-        placeholder_str = ', '.join([self.engine.placeholder] * len(fields))
-        sql_statement = f'INSERT INTO {self._table} ({field_str}) VALUES ({placeholder_str})'
+        sql_statement, values = self.engine.generate_insert_statement(self._table, fields, values)
+        print(sql_statement)
         cursor.execute(sql_statement, values)
 
         self.id = cursor.lastrowid

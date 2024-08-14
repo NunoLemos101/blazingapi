@@ -42,7 +42,10 @@ MIDDLEWARE_CLASSES = [
     "blazingapi.auth.middleware.BearerAuthenticationMiddleware",
 ]
 
-DB_FILE = "db.sqlite3"
+DB_CONNECTION = {
+    "driver": "sqlite",
+    "database": "db.sqlite3"
+}
 
 LOGIN_ENDPOINT = "/api/auth/login"
 REGISTER_ENDPOINT = "/api/auth/register"

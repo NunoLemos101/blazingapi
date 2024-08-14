@@ -40,6 +40,10 @@ class ConnectionPool:
 
 
 class BaseEngine:
+
+    def generate_insert_statement(self, table, fields, values):
+        raise NotImplementedError("Subclasses must implement this method")
+
     def get_connection(self):
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -68,8 +72,11 @@ class SQLiteEngine(BaseEngine):
         "DateTimeField": "DATETIME",
     }
 
-    def get_placeholder(self):
-        return "?"
+    def generate_insert_statement(self, table, fields, values):
+        field_str = ', '.join(fields)
+        placeholder_str = ', '.join([self.placeholder] * len(fields))
+        sql_statement = f'INSERT INTO {table} ({field_str}) VALUES ({placeholder_str})'
+        return sql_statement, values
 
     def get_connection(self):
         return sqlite3.connect(settings.DB_CONNECTION["database"])
@@ -98,6 +105,21 @@ class PostgresSQLEngine(BaseEngine):
         "NonNegativeFloatField": "REAL",
         "DateTimeField": "TIMESTAMP",
     }
+
+    def generate_insert_statement(self, table, fields, values):
+        #  In PostgresSQL the field "user" is a reserved keyword and must be quoted.
+        if "user" in fields:
+            fields[fields.index("user")] = '"user"'
+        #  While in SQLite database we can pass the id column as None and the autoincrement will work.
+        #  In PostgresSQL we need to remove the id field from the fields and values list.
+        if "id" in fields:
+            id_index = fields.index("id")
+            fields.pop(id_index)
+            values.pop(id_index)
+        field_str = ', '.join(fields)
+        placeholder_str = ', '.join([self.placeholder] * len(fields))
+        sql_statement = f'INSERT INTO {table} ({field_str}) VALUES ({placeholder_str})'
+        return sql_statement, values
 
     def get_connection(self):
         return psycopg2.connect(

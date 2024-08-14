@@ -19,8 +19,8 @@ MIDDLEWARE_CLASSES = [
 DB_FILE = "db.sqlite3"
 
 DB_CONNECTION = {
-    "driver": "postgres",
-    "database": "postgres",
+    "driver": "sqlite",
+    "database": "db.sqlite3",
     "host": "blazingapi-test.postgres.database.azure.com",
     "port": 5432,
     "user": "nuno",
