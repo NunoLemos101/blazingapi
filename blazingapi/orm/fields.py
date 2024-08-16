@@ -1,8 +1,6 @@
 from enum import Enum
 
-from blazingapi.orm.engines import SQLiteEngine, PostgresSQLEngine
 from blazingapi.orm.validators import EmailValidator, ChoiceValidator, MinValueValidator, MaxValueValidator, PositiveNumberValidator, NegativeNumberValidator, DateTimeValidator
-from blazingapi.settings import settings
 
 
 class ForeignKeyAction(Enum):
@@ -13,45 +11,18 @@ class ForeignKeyAction(Enum):
     NO_ACTION = "NO ACTION"
 
 
-class FieldMeta(type):
-    def __new__(cls, name, bases, attrs):
-        if name == "Field":
-            if settings.DB_CONNECTION["driver"] == "sqlite":
-                attrs['engine'] = SQLiteEngine()
-            elif settings.DB_CONNECTION["driver"] == "postgres":
-                attrs['engine'] = PostgresSQLEngine()
-        return super().__new__(cls, name, bases, attrs)
-
-
-class Field(metaclass=FieldMeta):
-
-    engine = None
+class Field:
 
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
         if nullable is False and default is None:
             raise ValueError("Non-nullable fields must have a default value")
 
-        self.field_type = self.engine.data_types[self.__class__.__name__]
         self.default = default
         self.nullable = nullable
         self.unique = unique
         self.validators = [] if validators is None else validators
         if choices is not None:
             self.validators.append(ChoiceValidator(choices))
-
-    def render_sql(self, name):
-        null_constraint = "" if self.nullable else " NOT NULL"
-        unique_constraint = " UNIQUE" if self.unique else ""
-
-        # If default value is a function, let the application handle it
-        if self.default is None or callable(self.default):
-            default_constraint = ""
-        elif isinstance(self.default, str):
-            default_constraint = f' DEFAULT "{self.default}"'
-        else:
-            default_constraint = f' DEFAULT {self.default}'
-
-        return f'"{name}" {self.field_type}{null_constraint}{unique_constraint}{default_constraint}'
 
     def validate(self, value):
         for validator in self.validators:
@@ -113,16 +84,6 @@ class ForeignKeyField(Field):
         self.on_delete = on_delete
         self.on_update = on_update
         self.related_name = related_name
-
-
-    def render_foreign_key_sql(self, name):
-        if self.reference_model is str:
-            reference_table = self.reference_model
-        else:
-            reference_table = self.reference_model._table
-
-        reference_field = 'id'
-        return f'FOREIGN KEY("{name}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {self.on_delete.value} ON UPDATE {self.on_update.value}'
 
     def __set_name__(self, owner, name):
         self.column_name = name

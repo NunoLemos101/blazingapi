@@ -1,7 +1,7 @@
 import copy
 import inspect
 
-from blazingapi.orm.engines import SQLiteEngine, PostgresSQLEngine, ConnectionPool
+from blazingapi.orm.engines import SQLiteEngine, PostgreSQLEngine, ConnectionPool, MySQLEngine
 from blazingapi.orm.fields import Field, PrimaryKeyField, ForeignKeyField, OneToOneField
 from blazingapi.orm.managers import Manager, RelatedModelManager
 from blazingapi.orm.relationships import LazyOneToOneReverseRelationship
@@ -25,7 +25,9 @@ class ModelMeta(type):
             if settings.DB_CONNECTION["driver"] == "sqlite":
                 attrs['engine'] = SQLiteEngine()
             elif settings.DB_CONNECTION["driver"] == "postgres":
-                attrs['engine'] = PostgresSQLEngine()
+                attrs['engine'] = PostgreSQLEngine()
+            elif settings.DB_CONNECTION["driver"] == "mysql":
+                attrs['engine'] = MySQLEngine()
 
         fields = {}
         foreign_keys = {}
@@ -69,7 +71,7 @@ class Model(metaclass=ModelMeta):
     depth_serialization_fields = []
     id = PrimaryKeyField()
     cache = {}
-    engine: SQLiteEngine | PostgresSQLEngine = None
+    engine = None
 
     def __init__(self, **kwargs):
         for field_name in kwargs:
@@ -113,8 +115,8 @@ class Model(metaclass=ModelMeta):
     def create_table(cls):
         connection = ConnectionPool.get_connection(cls.engine)
         cursor = connection.cursor()
-        fields = [field.render_sql(name) for name, field in cls._fields.items()]
-        foreign_keys = [field.render_foreign_key_sql(name) for name, field in cls._fields.items() if
+        fields = [cls.engine.render_field_sql(field, name) for name, field in cls._fields.items()]
+        foreign_keys = [cls.engine.render_foreign_key_field_sql(field, name) for name, field in cls._fields.items() if
                         isinstance(field, ForeignKeyField)]
 
         fields_str = ', '.join(fields)
@@ -122,6 +124,7 @@ class Model(metaclass=ModelMeta):
             fields_str += ', ' + ', '.join(foreign_keys)
 
         sql_statement = f'CREATE TABLE IF NOT EXISTS {cls._table} ({fields_str})'
+        print(sql_statement)
         cursor.execute(sql_statement)
 
         connection.commit()

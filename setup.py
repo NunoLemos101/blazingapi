@@ -17,6 +17,7 @@ setup(
         'jsonschema>=3.2.0',
         'psycopg2',
         'psycopg2-binary',
+        'mysql-connector-python'
     ],
     entry_points={
         'console_scripts': [

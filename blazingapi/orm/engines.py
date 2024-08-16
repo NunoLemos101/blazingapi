@@ -3,6 +3,7 @@ import threading
 from queue import Queue, Empty
 
 import psycopg2
+import mysql.connector
 
 from blazingapi.settings import settings
 
@@ -72,6 +73,28 @@ class SQLiteEngine(BaseEngine):
         "DateTimeField": "DATETIME",
     }
 
+    def render_field_sql(self, field, column):
+        null_constraint = "" if field.nullable else " NOT NULL"
+        unique_constraint = " UNIQUE" if field.unique else ""
+
+        if field.default is None or callable(field.default):
+            default_constraint = ""
+        elif isinstance(field.default, str):
+            default_constraint = f' DEFAULT "{field.default}"'
+        else:
+            default_constraint = f' DEFAULT {field.default}'
+
+        return f'"{column}" {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}'
+
+    def render_foreign_key_field_sql(self, field, column):
+        if field.reference_model is str:
+            reference_table = field.reference_model
+        else:
+            reference_table = field.reference_model._table
+
+        reference_field = 'id'
+        return f'FOREIGN KEY("{column}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {field.on_delete.value} ON UPDATE {field.on_update.value}'
+
     def generate_insert_statement(self, table, fields, values):
         field_str = ', '.join(fields)
         placeholder_str = ', '.join([self.placeholder] * len(fields))
@@ -82,7 +105,7 @@ class SQLiteEngine(BaseEngine):
         return sqlite3.connect(settings.DB_CONNECTION["database"])
 
 
-class PostgresSQLEngine(BaseEngine):
+class PostgreSQLEngine(BaseEngine):
 
     placeholder = "%s"
 
@@ -106,6 +129,28 @@ class PostgresSQLEngine(BaseEngine):
         "DateTimeField": "TIMESTAMP",
     }
 
+    def render_field_sql(self, field, column):
+        null_constraint = "" if field.nullable else " NOT NULL"
+        unique_constraint = " UNIQUE" if field.unique else ""
+
+        if field.default is None or callable(field.default):
+            default_constraint = ""
+        elif isinstance(field.default, str):
+            default_constraint = f' DEFAULT "{field.default}"'
+        else:
+            default_constraint = f' DEFAULT {field.default}'
+
+        return f'"{column}" {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}'
+
+    def render_foreign_key_field_sql(self, field, column):
+        if field.reference_model is str:
+            reference_table = field.reference_model
+        else:
+            reference_table = field.reference_model._table
+
+        reference_field = 'id'
+        return f'FOREIGN KEY("{column}") REFERENCES "{reference_table}" ("{reference_field}") ON DELETE {field.on_delete.value} ON UPDATE {field.on_update.value}'
+
     def generate_insert_statement(self, table, fields, values):
         #  In PostgresSQL the field "user" is a reserved keyword and must be quoted.
         if "user" in fields:
@@ -128,4 +173,72 @@ class PostgresSQLEngine(BaseEngine):
             password=settings.DB_CONNECTION["password"],
             host=settings.DB_CONNECTION["host"],
             port=settings.DB_CONNECTION["port"],
+        )
+
+
+class MySQLEngine(BaseEngine):
+
+    placeholder = "%s"
+
+    data_types = {
+        "IntegerField": "INT",
+        "TextField": "TEXT",
+        "VarCharField": "VARCHAR(%(max_length)s)",
+        "EmailField": "VARCHAR(256)",
+        "PrimaryKeyField": "INT PRIMARY KEY AUTO_INCREMENT",
+        "ForeignKeyField": "INT",
+        "OneToOneField": "INT",
+        "PositiveIntegerField": "INT",
+        "NegativeIntegerField": "INT",
+        "NonPositiveIntegerField": "INT",
+        "NonNegativeIntegerField": "INT",
+        "FloatField": "FLOAT",
+        "PositiveFloatField": "FLOAT",
+        "NegativeFloatField": "FLOAT",
+        "NonPositiveFloatField": "FLOAT",
+        "NonNegativeFloatField": "FLOAT",
+        "DateTimeField": "DATETIME",
+    }
+
+    def render_field_sql(self, field, column):
+        null_constraint = "" if field.nullable else " NOT NULL"
+        unique_constraint = " UNIQUE" if field.unique else ""
+
+        if field.default is None or callable(field.default):
+            default_constraint = ""
+        elif isinstance(field.default, str):
+            default_constraint = f" DEFAULT '{field.default}'"
+        else:
+            default_constraint = f' DEFAULT {field.default}'
+
+        return f"`{column}` {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}"
+
+    def render_foreign_key_field_sql(self, field, column):
+        if field.reference_model is str:
+            reference_table = field.reference_model
+        else:
+            reference_table = field.reference_model._table
+
+        reference_field = 'id'
+        return f'FOREIGN KEY(`{column}`) REFERENCES `{reference_table}` (`{reference_field}`) ON DELETE {field.on_delete.value} ON UPDATE {field.on_update.value}'
+
+    def generate_insert_statement(self, table, fields, values):
+        #  In MySQL database we can pass the id column as None and the autoincrement will work.
+        #  In PostgresSQL we need to remove the id field from the fields and values list.
+        if "id" in fields:
+            id_index = fields.index("id")
+            fields.pop(id_index)
+            values.pop(id_index)
+        field_str = ', '.join(fields)
+        placeholder_str = ', '.join([self.placeholder] * len(fields))
+        sql_statement = f'INSERT INTO {table} ({field_str}) VALUES ({placeholder_str})'
+        return sql_statement, values
+
+    def get_connection(self):
+        return mysql.connector.connect(
+            host=settings.DB_CONNECTION["host"],
+            port=settings.DB_CONNECTION["port"],
+            user=settings.DB_CONNECTION["user"],
+            password=settings.DB_CONNECTION["password"],
+            database=settings.DB_CONNECTION["database"],
         )

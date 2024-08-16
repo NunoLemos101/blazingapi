@@ -19,12 +19,12 @@ MIDDLEWARE_CLASSES = [
 DB_FILE = "db.sqlite3"
 
 DB_CONNECTION = {
-    "driver": "sqlite",
-    "database": "db.sqlite3",
-    "host": "blazingapi-test.postgres.database.azure.com",
-    "port": 5432,
-    "user": "nuno",
-    "password": "TRuw$@!2",
+    "driver": "mysql",
+    "database": "dbname",
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "2004Nuno!",
 }
 
 LOGIN_ENDPOINT = "/api/auth/login"
