@@ -42,6 +42,12 @@ class ConnectionPool:
 
 class BaseEngine:
 
+    def render_field_sql(self, field, column):
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def render_foreign_key_field_sql(self, field, column):
+        raise NotImplementedError("Subclasses must implement this method")
+
     def generate_insert_statement(self, table, fields, values):
         raise NotImplementedError("Subclasses must implement this method")
 
