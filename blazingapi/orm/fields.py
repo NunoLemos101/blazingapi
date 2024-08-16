@@ -16,7 +16,6 @@ class Field:
     def __init__(self, default=None, nullable=True, unique=False, choices=None, validators=None):
         if nullable is False and default is None:
             raise ValueError("Non-nullable fields must have a default value")
-
         self.default = default
         self.nullable = nullable
         self.unique = unique
@@ -53,7 +52,6 @@ class VarCharField(Field):
     def __init__(self, max_length, default=None, nullable=True, unique=False, choices=None, validators=None):
         super().__init__(default, nullable, unique, choices, validators)
         self.max_length = max_length
-        self.field_type = self.field_type % {'max_length': max_length}
 
 
 class EmailField(Field):

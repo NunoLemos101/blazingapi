@@ -42,6 +42,9 @@ class ConnectionPool:
 
 class BaseEngine:
 
+    def get_sql(self, q_obj):
+        raise NotImplementedError("Subclasses must implement this method")
+
     def render_field_sql(self, field, column):
         raise NotImplementedError("Subclasses must implement this method")
 
@@ -79,6 +82,34 @@ class SQLiteEngine(BaseEngine):
         "DateTimeField": "DATETIME",
     }
 
+    def get_sql(self, q_obj):
+        sql = []
+        values = []
+
+        for key, value in q_obj.query.items():
+            if key.endswith("__in"):
+                field = key[:-4]
+                placeholders = ', '.join([self.placeholder for _ in value])
+                sql.append(f'"{field}" IN ({placeholders})')
+                values.extend(value)
+            else:
+                sql.append(f'"{key}" = {self.placeholder}')
+                values.append(value)
+
+        inner_sql = f" {q_obj.connector} ".join(sql)
+        if inner_sql:
+            inner_sql = f"({inner_sql})"
+
+        for connector, child in q_obj.children:
+            child_sql, child_values = child.get_sql()
+            if inner_sql:
+                inner_sql += f" {connector} ({child_sql})"
+            else:
+                inner_sql = f"({child_sql})"
+            values.extend(child_values)
+
+        return inner_sql, values
+
     def render_field_sql(self, field, column):
         null_constraint = "" if field.nullable else " NOT NULL"
         unique_constraint = " UNIQUE" if field.unique else ""
@@ -90,7 +121,12 @@ class SQLiteEngine(BaseEngine):
         else:
             default_constraint = f' DEFAULT {field.default}'
 
-        return f'"{column}" {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}'
+        data_type = self.data_types[field.__class__.__name__]
+
+        if field.__class__.__name__ == "VarCharField":
+            data_type = data_type % {'max_length': field.max_length}
+
+        return f'"{column}" {data_type}{null_constraint}{unique_constraint}{default_constraint}'
 
     def render_foreign_key_field_sql(self, field, column):
         if field.reference_model is str:
@@ -135,6 +171,34 @@ class PostgreSQLEngine(BaseEngine):
         "DateTimeField": "TIMESTAMP",
     }
 
+    def get_sql(self, q_obj):
+        sql = []
+        values = []
+
+        for key, value in q_obj.query.items():
+            if key.endswith("__in"):
+                field = key[:-4]
+                placeholders = ', '.join([self.placeholder for _ in value])
+                sql.append(f'"{field}" IN ({placeholders})')
+                values.extend(value)
+            else:
+                sql.append(f'"{key}" = {self.placeholder}')
+                values.append(value)
+
+        inner_sql = f" {q_obj.connector} ".join(sql)
+        if inner_sql:
+            inner_sql = f"({inner_sql})"
+
+        for connector, child in q_obj.children:
+            child_sql, child_values = child.get_sql()
+            if inner_sql:
+                inner_sql += f" {connector} ({child_sql})"
+            else:
+                inner_sql = f"({child_sql})"
+            values.extend(child_values)
+
+        return inner_sql, values
+
     def render_field_sql(self, field, column):
         null_constraint = "" if field.nullable else " NOT NULL"
         unique_constraint = " UNIQUE" if field.unique else ""
@@ -146,7 +210,12 @@ class PostgreSQLEngine(BaseEngine):
         else:
             default_constraint = f' DEFAULT {field.default}'
 
-        return f'"{column}" {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}'
+        data_type = self.data_types[field.__class__.__name__]
+
+        if field.__class__.__name__ == "VarCharField":
+            data_type = data_type % {'max_length': field.max_length}
+
+        return f'"{column}" {data_type}{null_constraint}{unique_constraint}{default_constraint}'
 
     def render_foreign_key_field_sql(self, field, column):
         if field.reference_model is str:
@@ -206,6 +275,34 @@ class MySQLEngine(BaseEngine):
         "DateTimeField": "DATETIME",
     }
 
+    def get_sql(self, q_obj):
+        sql = []
+        values = []
+
+        for key, value in q_obj.query.items():
+            if key.endswith("__in"):
+                field = key[:-4]
+                placeholders = ', '.join([self.placeholder for _ in value])
+                sql.append(f'`{field}` IN ({placeholders})')
+                values.extend(value)
+            else:
+                sql.append(f'`{key}` = {self.placeholder}')
+                values.append(value)
+
+        inner_sql = f" {q_obj.connector} ".join(sql)
+        if inner_sql:
+            inner_sql = f"({inner_sql})"
+
+        for connector, child in q_obj.children:
+            child_sql, child_values = child.get_sql()
+            if inner_sql:
+                inner_sql += f" {connector} ({child_sql})"
+            else:
+                inner_sql = f"({child_sql})"
+            values.extend(child_values)
+
+        return inner_sql, values
+
     def render_field_sql(self, field, column):
         null_constraint = "" if field.nullable else " NOT NULL"
         unique_constraint = " UNIQUE" if field.unique else ""
@@ -217,7 +314,12 @@ class MySQLEngine(BaseEngine):
         else:
             default_constraint = f' DEFAULT {field.default}'
 
-        return f"`{column}` {self.data_types[field.__class__.__name__]}{null_constraint}{unique_constraint}{default_constraint}"
+        data_type = self.data_types[field.__class__.__name__]
+
+        if field.__class__.__name__ == "VarCharField":
+            data_type = data_type % {'max_length': field.max_length}
+
+        return f"`{column}` {data_type}{null_constraint}{unique_constraint}{default_constraint}"
 
     def render_foreign_key_field_sql(self, field, column):
         if field.reference_model is str:
@@ -229,12 +331,6 @@ class MySQLEngine(BaseEngine):
         return f'FOREIGN KEY(`{column}`) REFERENCES `{reference_table}` (`{reference_field}`) ON DELETE {field.on_delete.value} ON UPDATE {field.on_update.value}'
 
     def generate_insert_statement(self, table, fields, values):
-        #  In MySQL database we can pass the id column as None and the autoincrement will work.
-        #  In PostgresSQL we need to remove the id field from the fields and values list.
-        if "id" in fields:
-            id_index = fields.index("id")
-            fields.pop(id_index)
-            values.pop(id_index)
         field_str = ', '.join(fields)
         placeholder_str = ', '.join([self.placeholder] * len(fields))
         sql_statement = f'INSERT INTO {table} ({field_str}) VALUES ({placeholder_str})'

@@ -90,13 +90,15 @@ class Model(metaclass=ModelMeta):
                 else:
                     value = field.default
             if field_name in self._foreign_keys:
-                if isinstance(value, Model) and type(field) == ForeignKeyField:
+                if isinstance(value, Model) and type(field) is ForeignKeyField:
                     setattr(self, field_name, value)
                     foreign_key = self._foreign_keys[field_name]
                     related_name = foreign_key.related_name
                     if foreign_key.related_name is None:
                         related_name = f'{self._table}_set'
                     setattr(value, related_name, RelatedModelManager(self.__class__, value, field.column_name))
+                elif isinstance(value, Model) and type(field) is OneToOneField:
+                    setattr(self, field_name, value)
                 else:
                     setattr(self, f"_{field_name}_id", value)
             else:
@@ -157,7 +159,7 @@ class Model(metaclass=ModelMeta):
                 values.append(value)
 
         sql_statement, values = self.engine.generate_insert_statement(self._table, fields, values)
-        print(sql_statement)
+        print(sql_statement, values)
         cursor.execute(sql_statement, values)
 
         self.id = cursor.lastrowid

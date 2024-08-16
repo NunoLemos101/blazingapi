@@ -34,34 +34,7 @@ class Q:
         return combined
 
     def get_sql(self):
-        sql = []
-        values = []
-
-        for key, value in self.query.items():
-            if key.endswith("__in"):
-                field = key[:-4]
-                placeholders = ', '.join([self.engine.placeholder for _ in value])
-                sql.append(f'"{field}" IN ({placeholders})')
-                values.extend(value)
-            else:
-                sql.append(f'"{key}" = {self.engine.placeholder}')
-                values.append(value)
-
-        # Ensure internal conditions are grouped with the internal connector
-        inner_sql = f" {self.connector} ".join(sql)
-        if inner_sql:
-            inner_sql = f"({inner_sql})"
-
-        # Now handle the children which are combined with connectors (AND/OR)
-        for connector, child in self.children:
-            child_sql, child_values = child.get_sql()
-            if inner_sql:
-                inner_sql += f" {connector} ({child_sql})"
-            else:
-                inner_sql = f"({child_sql})"
-            values.extend(child_values)
-
-        return inner_sql, values
+        return self.engine.get_sql(self)
 
 
 class QuerySet:
